@@ -1,0 +1,15 @@
+{
+  "name": "raksa-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Raksa 1.0 — aplikasi web (PWA)",
+  "scripts": {
+    "build": "bash build.sh"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

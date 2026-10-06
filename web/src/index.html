@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Raksa</title>
+<meta name="description" content="Raksa — kontrol kasus & stok">
+<meta name="theme-color" content="#0f5a46">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Raksa">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/raksa.css?v=__VERSI__">
+<style>
+  html,body{background:rgb(var(--bg))}
+  #raksa-boot[hidden]{display:none}
+  .rb-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;
+    background:radial-gradient(1200px 600px at 20% -10%,rgb(var(--brand-100)),transparent 60%),rgb(var(--bg))}
+  .rb-card{width:100%;max-width:400px;background:rgb(var(--surface));border:1px solid rgb(var(--n-200));border-radius:18px;
+    padding:28px 24px;box-shadow:0 20px 50px -20px rgba(9,51,40,.35)}
+  .rb-head{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .rb-nama{font-size:22px;font-weight:800;letter-spacing:-.02em;color:rgb(var(--n-900))}
+  .rb-sub{font-size:12px;font-weight:500;color:rgb(var(--n-500))}
+  .rb-form h1{font-size:17px;font-weight:700;margin:0 0 14px;color:rgb(var(--n-900))}
+  .rb-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:rgb(var(--n-700));margin-bottom:12px}
+  .rb-form input{height:44px;border-radius:10px;border:1px solid rgb(var(--n-200));background:rgb(var(--surface));padding:0 12px;font-size:15px;
+    color:rgb(var(--n-900));font-family:inherit}
+  .rb-form input:focus{outline:none;border-color:rgb(var(--brand-500));box-shadow:0 0 0 3px rgb(var(--brand-100))}
+  .rb-form button{width:100%;height:46px;border:0;border-radius:10px;background:rgb(var(--brand-700));color:#fff;font-weight:700;font-size:15px;
+    font-family:inherit;cursor:pointer;margin-top:4px}
+  .rb-form button:hover{background:rgb(var(--brand-800))}
+  .rb-form button:disabled{opacity:.6;cursor:default}
+  .rb-form button.rb-sek{background:transparent;color:rgb(var(--n-700));border:1px solid rgb(var(--n-200));margin-top:8px}
+  .rb-err{background:#fff1f2;color:#be123c;border-radius:8px;padding:9px 11px;font-size:13px;margin:4px 0 10px}
+  .dark .rb-err{background:#50141e8c;color:#fd96a0}
+  .rb-hint{font-size:12.5px;color:rgb(var(--n-500));margin:12px 0 0;line-height:1.5}
+  .rb-muat p{font-size:13px;color:rgb(var(--n-600));margin:12px 0 0;text-align:center}
+  .rb-bar{height:6px;border-radius:9px;background:rgb(var(--n-100));overflow:hidden}
+  .rb-bar span{display:block;height:100%;background:rgb(var(--brand-600));border-radius:9px;transition:width .25s}
+  .rb-foot{margin-top:16px;font-size:11px;color:rgb(var(--n-400))}
+</style>
+<script>
+  (function(){try{var t=localStorage.getItem("raksa-raksa-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark")}catch(e){}})();
+</script>
+</head>
+<body>
+<div id="raksa-boot"><div class="rb-wrap"><div class="rb-card"><div class="rb-muat"><div class="rb-bar"><span style="width:6%"></span></div><p>Membuka Raksa…</p></div></div></div></div>
+<div id="root"></div>
+<noscript>Raksa membutuhkan JavaScript.</noscript>
+<script src="/boot.js?v=__VERSI__"></script>
+</body>
+</html>

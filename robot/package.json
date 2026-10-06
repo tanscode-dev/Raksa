@@ -1,7 +1,9 @@
 {
-  "name": "raksa-robot1",
+  "name": "raksa-robot",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "start": "node robot1.mjs" },
-  "dependencies": { "playwright": "1.56.0" }
+  "description": "Robot 1 Raksa: ambil pesanan BigSeller (Playwright, GitHub Actions)",
+  "scripts": { "robot1": "node robot1.mjs" },
+  "dependencies": { "playwright": "1.48.2" }
 }

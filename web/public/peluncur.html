@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Peluncur Robot Raksa</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#f3f6f4;--card:#fff;--ink:#14231d;--muted:#5b6b64;--brand:#0f5c4a;--warn:#8a5a00;--bad:#b42318}
+*{box-sizing:border-box}body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+main{background:var(--card);border:1px solid #dbe3df;border-radius:14px;max-width:460px;width:100%;padding:24px}
+h1{font-size:18px;margin:0 0 4px}p{margin:6px 0;color:var(--muted)}
+#st{margin-top:14px;padding:10px 12px;border-radius:8px;background:#eef5f2;color:var(--brand);font-weight:600}
+button{margin-top:6px;font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;border:0;background:var(--brand);color:#fff;cursor:pointer}
+#st.warn{background:#fff6e5;color:var(--warn)}#st.bad{background:#fdecea;color:var(--bad)}
+</style>
+</head>
+<body>
+<main>
+<h1>Peluncur Robot Raksa</h1>
+<p id="info">Halaman ini meneruskan perintah dari Raksa ke UI.Vision. Tidak ada data yang disimpan di sini.</p>
+<div id="st">Menyiapkan…</div>
+<div id="hasil" data-hasil="" hidden></div>
+<p id="namafile" hidden></p>
+<div id="manual" hidden><p>Kalau robot tidak melanjutkan dalam 1 menit setelah file terunduh, pilih file hasil unduhan BigSeller secara manual:</p><button id="pilih" type="button">Pilih file pesanan</button></div>
+<input type="text" id="rkinfo" style="position:absolute;left:-9999px;width:1px;height:1px" aria-hidden="true" tabindex="-1">
+<input type="file" id="rkfile" accept=".xlsx,.xls" style="position:absolute;left:-9999px;width:1px;height:1px" aria-hidden="true" tabindex="-1">
+</main>
+<script>
+(function(){
+// Raksa 1.0: peluncur ini berada di domain yang sama dengan Raksa.
+var RAKSA_ORIGIN=location.origin;var MY_TITLE="Peluncur Robot Raksa";
+var TOKEN=Math.random().toString(36).slice(2,10);var BS_PESANAN="https://www.bigseller.com/web/order/index.htm?status=all";var BS_URL={tambah:"https://www.bigseller.com/web/inventory/inout/list/in/index.htm",kurang:"https://www.bigseller.com/web/inventory/inout/list/out/index.htm"};var HOME=location.origin+location.pathname;
+var st=document.getElementById("st");
+function say(t,c){st.textContent=t;st.className=c||""}
+function cmd(c,t,v,d){return{Command:c,Target:t||"",Value:v||"",Description:d||""}}
+function ok(d){return /^\d{4}-\d{2}-\d{2}$/.test(d)&&!isNaN(new Date(d+"T00:00:00Z"))}
+function makroPesanan(dari,sampai,folder){
+var C=[];
+C.push(cmd("comment","Robot 1 via peluncur: pesanan "+dari+" s/d "+sampai));
+C.push(cmd("selectWindow","tab=open",BS_PESANAN,"Buka halaman Pesanan BigSeller (sudah login)"));
+C.push(cmd("pause","5000"));
+C.push(cmd("store","300","!TIMEOUT_DOWNLOAD"));
+C.push(cmd("click","xpath=//input[contains(@class,'ant-calendar-range-picker-input') and @placeholder='Waktu Mulai']","","Buka kalender"));
+C.push(cmd("pause","900"));
+C.push(cmd("type","xpath=//input[contains(@class,'ant-calendar-input') and @placeholder='Waktu Mulai']",dari+" 00:00:00"));
+C.push(cmd("pause","400"));
+C.push(cmd("type","xpath=//input[contains(@class,'ant-calendar-input') and @placeholder='Waktu Berakhir']",sampai+" 23:59:59"));
+C.push(cmd("pause","500"));
+C.push(cmd("click","xpath=//a[contains(@class,'ant-calendar-ok-btn')]","","Baik"));
+C.push(cmd("pause","3500","","Tunggu daftar dimuat ulang"));
+C.push(cmd("mouseOver","xpath=(//button[normalize-space()='Ekspor'])[1]","","Munculkan menu Ekspor"));
+C.push(cmd("pause","1200"));
+C.push(cmd("store","true","!ErrorIgnore"));
+C.push(cmd("executeScript","var b=document.evaluate(\"(//button[normalize-space()='Ekspor'])[1]\",document,null,9,null).singleNodeValue;if(!b)return 'tidak-ada-tombol';var t=b.closest('.ant-dropdown-trigger')||b;t.dispatchEvent(new MouseEvent('mouseenter'));var v=t.__vue__;for(var i=0;v&&6>i;i++){if(typeof v.setPopupVisible==='function'){v.setPopupVisible(true);return 'vue'}v=v.$parent}return 'event'","caraMenu","Buka menu Ekspor (BigSeller hanya membuka menu saat kursor di atas tombol)"));
+C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("waitForElementPresent","xpath=(//span[contains(@class,'dropdown_content')]//*[normalize-space(text())='Ekspor Semua Pesanan'])[last()]","","Tunggu menu Ekspor muncul"));
+C.push(cmd("click","xpath=(//span[contains(@class,'dropdown_content')]//*[normalize-space(text())='Ekspor Semua Pesanan'])[last()]"));
+C.push(cmd("pause","2500"));
+C.push(cmd("click","xpath=//div[contains(@class,'ant-modal')]//div[contains(@class,'ant-select-selection-selected-value')]","","Buka Jenis Ekspor"));
+C.push(cmd("pause","900"));
+C.push(cmd("click","xpath=//li[contains(@class,'ant-select-dropdown-menu-item') and normalize-space()='Ekspor Berdasarkan Sub SKU Gudang']"));
+C.push(cmd("pause","900"));
+C.push(cmd("click","xpath=//div[contains(@class,'ant-modal')]//button[normalize-space()='Ekspor']","","Ekspor"));
+C.push(cmd("store","300","!TIMEOUT_WAIT"));
+C.push(cmd("waitForElementPresent","xpath=//*[contains(normalize-space(text()),'Ekspor Selesai')]","","Tunggu Ekspor Selesai"));
+C.push(cmd("store","10","!TIMEOUT_WAIT"));
+C.push(cmd("onDownload","pesanan_${!NOW:yyyymmdd_hhnnss}.xlsx","true"));
+C.push(cmd("click","xpath=//a[contains(@class,'ant-btn') and normalize-space()='Unduh']","","Unduh"));
+C.push(cmd("store","${!LAST_DOWNLOADED_FILE_NAME}","filePesanan"));
+C.push(cmd("store","true","!ErrorIgnore"));
+C.push(cmd("click","xpath=//button[normalize-space()='Tutup']"));
+C.push(cmd("selectWindow","tab=close","","Tutup tab BigSeller"));
+C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("selectWindow","title="+MY_TITLE,"","Kembali ke tab Peluncur"));
+C.push(cmd("type","id=rkinfo",folder+"\\${filePesanan}","Tampilkan nama file di peluncur"));
+C.push(cmd("type","id=rkfile",folder+"\\${filePesanan}","Serahkan file ke peluncur (butuh izin akses file URL)"));
+C.push(cmd("pause","1500"));
+C.push(cmd("selectWindow","title=Raksa","","Tampilkan tab Raksa"));
+C.push(cmd("store","120","!TIMEOUT_WAIT"));
+C.push(cmd("waitForElementPresent","xpath=//span[@id='rk-robot' and @data-id='"+TOKEN+"' and (@data-status='OK' or @data-status='GAGAL')]","","Tunggu Raksa selesai memasukkan pesanan"));
+C.push(cmd("store","10","!TIMEOUT_WAIT"));
+C.push(cmd("storeAttribute","id=rk-robot@data-status","hasil"));
+C.push(cmd("storeAttribute","id=rk-robot@data-pesan","pesan"));
+C.push(cmd("if_v2","${hasil} != \"OK\""));
+C.push(cmd("throwError","Upload ke Raksa gagal: ${pesan}"));
+C.push(cmd("end"));
+C.push(cmd("storeAttribute","id=rk-robot@data-baru","baru"));
+C.push(cmd("echo","Selesai: ${baru} pesanan baru masuk Raksa"));
+return JSON.stringify({Name:"Raksa_Robot1_Peluncur",CreationDate:new Date().toISOString().slice(0,10),Commands:C});
+}
+function jsBukaMenu(label,item){return "var b=document.evaluate(\"(//button[normalize-space()='"+label+"'])[1]\",document,null,9,null).singleNodeValue;if(!b)return 'tidak-ada-tombol';var t=b.closest('.ant-dropdown-trigger')||b;t.dispatchEvent(new MouseEvent('mouseenter'));var v=t.__vue__;for(var i=0;v&&6>i;i++){if(typeof v.setPopupVisible==='function'){v.setPopupVisible(true);return 'vue'}v=v.$parent}return 'event'"}
+function jsBacaHasil(n){return "var ms=[].slice.call(document.querySelectorAll('.ant-modal-wrap')).filter(function(m){return m.style.display!=='none'&&/Berhasil/.test(m.innerText)});var m=ms[ms.length-1];if(!m)return 'PROSES';var tx=m.innerText.replace(/\\s+/g,' ').replace(/\\|/g,'/');var b=/Berhasil\\s*:?\\s*(\\d+)/.exec(tx),g=/Gagal\\s*:?\\s*(\\d+)/.exec(tx);var B=b?+b[1]:0,G=g?+g[1]:0;if(B+G<"+n+")return 'PROSES';if(G>0||B<"+n+")return 'GAGAL:berhasil '+B+', gagal '+G+'. '+tx.slice(0,160);return 'OK:'+B"}
+function jsKlikBaris(tok){return "var rows=[].slice.call(document.querySelectorAll('.list_items_out')).filter(function(x){var t=x.querySelector('.items_tit');return t&&t.textContent.indexOf('"+tok+"')>=0});if(rows.length!==1)return 'BARIS:'+rows.length;var ic=rows[0].querySelector('.item_action .bsicon_inbound, .item_action .bsicon_outbound');if(!ic)return 'IKON-TIDAK-ADA';ic.click();return 'KLIK'"}
+function jsKlikKonfirmasi(){return "var bs=[].slice.call(document.querySelectorAll('.ant-modal-wrap button, .ant-modal-confirm button')).filter(function(b){return b.textContent.trim()==='Konfirmasi'&&b.getBoundingClientRect().width>0});if(!bs.length)return 'TOMBOL-TIDAK-ADA';bs[bs.length-1].click();return 'OK'"}
+function jsCekBaris(tok){return "var n=[].slice.call(document.querySelectorAll('.list_items_out')).filter(function(x){var t=x.querySelector('.items_tit');return t&&t.textContent.indexOf('"+tok+"')>=0}).length;return n"}
+function makroStok(token,nt,nk,folder,uji,meta){meta=meta||{};var LB=meta.lbl||{},NM=meta.nama||{};
+var C=[],parts=[];if(nt>0)parts.push(["tambah",nt,"Penambahan"]);if(nk>0)parts.push(["kurang",nk,"Pengurangan"]);
+C.push(cmd("comment","Robot 2 via peluncur: kirim stok ("+nt+" SKU tambah, "+nk+" SKU kurang) token "+token));
+C.push(cmd("store","-","hasil_tambah"));C.push(cmd("store","-","hasil_kurang"));
+C.push(cmd("store","120","!TIMEOUT_DOWNLOAD"));
+parts.forEach(function(pt){var P=pt[0],n=pt[1],L=pt[2],tok=(LB[P]||"Raksa-"+token+"-"+P).replace(/['"\\]/g,""),fname=(NM[P]||"raksa_"+P+"_"+token+".xlsx").replace(/[\\\/:*?"<>|']/g,""),syarat=uji&&P==="kurang"&&nt>0;
+if(syarat)C.push(cmd("if_v2","${hasil_tambah}.indexOf(\"OK\") == 0","","Uji coba: kurangi hanya jika penambahan berhasil"));
+C.push(cmd("comment","=== "+L+" Stok ("+n+" SKU) ==="));
+C.push(cmd("store","true","!ErrorIgnore"));
+C.push(cmd("selectWindow","tab=open",HOME+"#mode=unduh&token="+token+"&part="+P,"Ambil file "+L+" dari Raksa (tab baru)"));
+C.push(cmd("store","30","!TIMEOUT_WAIT"));
+C.push(cmd("waitForElementPresent","xpath=//div[@id='st' and (starts-with(normalize-space(.),'File diunduh') or contains(@class,'bad'))]","","Tunggu file "+L+" terunduh"));
+C.push(cmd("store","10","!TIMEOUT_WAIT"));
+C.push(cmd("storeText","id=st","status_"+P));
+C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("pause","2500","","Beri waktu Chrome menyimpan file"));
+C.push(cmd("if_v2","${status_"+P+"}.indexOf(\"File diunduh\") == 0"));
+C.push(cmd("open",BS_URL[P],"","Halaman "+L+" Stok BigSeller"));
+C.push(cmd("pause","5000"));
+C.push(cmd("store","true","!ErrorIgnore"));
+C.push(cmd("executeScript",jsBukaMenu("Impor & Ekspor"),"caraMenu","Buka menu Impor & Ekspor"));
+C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("waitForElementPresent","xpath=//li[contains(@class,'ant-dropdown-menu-item') and normalize-space()='Impor & Perbarui']"));
+C.push(cmd("click","xpath=//li[contains(@class,'ant-dropdown-menu-item') and normalize-space()='Impor & Perbarui']","","Impor & Perbarui"));
+C.push(cmd("waitForElementPresent","xpath=//div[contains(@class,'ant-modal')]//textarea[contains(@class,'noteText')]"));
+C.push(cmd("type","xpath=//div[contains(@class,'ant-modal')]//textarea[contains(@class,'noteText')]",tok,"Catatan batch dari Raksa"));
+C.push(cmd("store","true","!ErrorIgnore"));
+C.push(cmd("type","xpath=//div[contains(@class,'ant-modal')]//input[@type='file']",folder+"\\"+fname,"Unggah File "+fname));
+C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("pause","2000"));
+C.push(cmd("executeScript","var m=[].slice.call(document.querySelectorAll('.ant-modal-wrap')).filter(function(x){return x.style.display!=='none'&&x.querySelector('textarea.noteText')}).pop();if(!m)return 'TIDAK-ADA-JENDELA';return /Tidak ada File yang Dipilih/.test(m.innerText)?'KOSONG':'ADA'","fileMasuk_"+P,"Cek file sudah terpilih"));
+C.push(cmd("if_v2","${fileMasuk_"+P+"} != \"ADA\""));
+C.push(cmd("store","GAGAL:file tidak bisa diunggah ke BigSeller ("+folder+"\\"+fname+"). Cek izin Allow access to file URLs dan folder Download.","hasil_"+P));
+C.push(cmd("store","true","!ErrorIgnore"));C.push(cmd("click","xpath=//div[contains(@class,'ant-modal')]//button[normalize-space()='Batalkan']","","Batalkan impor"));C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("else"));
+C.push(cmd("pause","2000"));
+C.push(cmd("click","xpath=//div[contains(@class,'ant-modal')]//button[normalize-space()='Impor']","","Impor"));
+C.push(cmd("store","120","!TIMEOUT_WAIT"));
+C.push(cmd("waitForElementPresent","xpath=//*[contains(normalize-space(text()),'Berhasil')]","","Tunggu jendela Hasil"));
+C.push(cmd("store","10","!TIMEOUT_WAIT"));
+C.push(cmd("store","PROSES","hasil_"+P));C.push(cmd("store","0","i"));
+C.push(cmd("while_v2","${hasil_"+P+"} == \"PROSES\" && ${i} < 60"));
+C.push(cmd("pause","1500"));
+C.push(cmd("executeScript",jsBacaHasil(n),"hasil_"+P,"Baca Berhasil / Gagal"));
+C.push(cmd("executeScript_Sandbox","return Number(${i})+1","i"));
+C.push(cmd("end"));
+C.push(cmd("if_v2","${hasil_"+P+"} == \"PROSES\""));C.push(cmd("store","GAGAL:jendela Hasil tidak selesai","hasil_"+P));C.push(cmd("end"));
+C.push(cmd("store","true","!ErrorIgnore"));C.push(cmd("click","xpath=(//button[normalize-space()='Tutup'])[last()]","","Tutup jendela Hasil"));C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("if_v2","${hasil_"+P+"}.indexOf(\"OK\") == 0"));
+C.push(cmd("open",BS_URL[P],"","Muat ulang daftar Pending"));C.push(cmd("pause","5000"));
+C.push(cmd("store","-","ok_"+P));C.push(cmd("store","BARIS:0","klik_"+P));C.push(cmd("store","0","j"));
+C.push(cmd("while_v2","${klik_"+P+"}.indexOf(\"BARIS:0\") == 0 && ${j} < 10"));
+C.push(cmd("pause","2000"));
+C.push(cmd("executeScript",jsKlikBaris(tok),"klik_"+P,"Klik ikon Konfirmasi pada baris catatan "+tok));
+C.push(cmd("executeScript_Sandbox","return Number(${j})+1","j"));
+C.push(cmd("end"));
+C.push(cmd("if_v2","${klik_"+P+"} == \"KLIK\""));
+C.push(cmd("pause","1500"));
+C.push(cmd("executeScript",jsKlikKonfirmasi(),"ok_"+P,"Klik Konfirmasi di pop-up"));
+C.push(cmd("end"));
+C.push(cmd("pause","3000"));
+C.push(cmd("open",BS_URL[P],"","Cek ulang daftar Pending"));C.push(cmd("pause","5000"));
+C.push(cmd("executeScript",jsCekBaris(tok),"sisa_"+P,"Baris batch ini harus sudah hilang dari Pending"));
+C.push(cmd("if_v2","${sisa_"+P+"} != 0"));C.push(cmd("store","GAGAL:impor berhasil tapi belum terkonfirmasi (klik=${klik_"+P+"}, pop-up=${ok_"+P+"}), cek tab Pending dengan catatan: "+tok,"hasil_"+P));C.push(cmd("end"));
+C.push(cmd("end"));
+C.push(cmd("end"));
+C.push(cmd("else"));
+C.push(cmd("store","GAGAL:file "+L+" tidak terunduh dari peluncur (${status_"+P+"})","hasil_"+P));
+C.push(cmd("end"));
+C.push(cmd("store","true","!ErrorIgnore"));C.push(cmd("selectWindow","tab=close","","Tutup tab "+L));C.push(cmd("store","false","!ErrorIgnore"));
+if(syarat){C.push(cmd("else"));C.push(cmd("store","GAGAL:dilewati karena penambahan gagal (uji coba)","hasil_kurang"));C.push(cmd("end"))}
+});
+C.push(cmd("store","true","!ErrorIgnore"));C.push(cmd("selectWindow","title="+MY_TITLE));C.push(cmd("type","id=rkinfo","SELESAI-STOK|${hasil_tambah}|${hasil_kurang}#","Kirim hasil ke Raksa lalu tutup tab Peluncur"));C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("selectWindow","title=Raksa","","Kembali ke tab Raksa"));
+C.push(cmd("store","true","!ErrorIgnore"));C.push(cmd("type","id=rk-stok-hasil",token+"|${hasil_tambah}|${hasil_kurang}|#","Cadangan: laporkan hasil langsung ke Raksa"));C.push(cmd("store","false","!ErrorIgnore"));
+C.push(cmd("echo","Robot 2 selesai. Penambahan ${hasil_tambah} | Pengurangan ${hasil_kurang}"));
+return JSON.stringify({Name:"Raksa_Robot2_Peluncur",CreationDate:new Date().toISOString().slice(0,10),Commands:C});
+}
+function modeUnduh(prm){var tok=prm.get("token"),part=prm.get("part");document.title="Unduh file Raksa";document.getElementById("info").textContent="Mengambil file "+(part==="tambah"?"penambahan":"pengurangan")+" stok dari peluncur.";
+ if(!/^[a-z0-9]{4,20}$/.test(tok||"")||(part!=="tambah"&&part!=="kurang")){say("Perintah tidak valid.","bad");return}
+ var bc=new BroadcastChannel("raksa-robot"),sudah=false;
+ var nmF="raksa_"+part+"_"+tok+".xlsx";try{nmF=localStorage.getItem("raksa-"+tok+"-"+part+"-nama")||nmF;localStorage.removeItem("raksa-"+tok+"-"+part+"-nama")}catch(e){}
+ function simpan(buf){var url=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})),a=document.createElement("a");a.href=url;a.download=nmF;document.body.appendChild(a);a.click();say("File diunduh: "+a.download)}
+ try{var ls=localStorage.getItem("raksa-"+tok+"-"+part);if(ls){sudah=true;localStorage.removeItem("raksa-"+tok+"-"+part);simpan(dariB64(ls));return}}catch(e){}
+ bc.onmessage=function(ev){var d=ev.data||{};if(d.type!=="file"||d.token!==tok||d.part!==part||sudah)return;sudah=true;if(!d.buf){say("File tidak tersedia di peluncur.","bad");return}simpan(d.buf)};
+ var n=0;(function minta(){if(sudah)return;bc.postMessage({type:"minta",token:tok,part:part});if(++n>20){say("Peluncur tidak menjawab. Pastikan tab Peluncur Robot Raksa masih terbuka.","bad");return}setTimeout(minta,700)})();
+ say("Meminta file dari peluncur…")}
+function b64(buf){var u=new Uint8Array(buf),r="";for(var i=0;u.length>i;i+=32768)r+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(r)}
+function dariB64(t){var r=atob(t),u=new Uint8Array(r.length);for(var i=0;r.length>i;i++)u[i]=r.charCodeAt(i);return u.buffer}
+function keRaksa(msg){try{window.opener.postMessage(msg,RAKSA_ORIGIN)}catch(e){}}
+function mulaiStok(tok,nt,nk,folder,uji){
+ if(!/^[a-z0-9]{4,20}$/.test(tok||"")||nt+nk<1){say("Perintah tidak valid. Jalankan ulang dari Raksa.","bad");return}
+ document.getElementById("info").textContent="Robot 2: kirim stok ke BigSeller ("+nt+" SKU penambahan, "+nk+" SKU pengurangan).";
+ if(!window.opener){say("Tab Raksa tidak terhubung. Jalankan ulang dari tombol di Raksa.","bad");return}
+ var files=null,k=0,ri=document.getElementById("rkinfo"),kirimHasil=false,fin=function(){var v=ri.value||"";if(kirimHasil||v.indexOf("SELESAI-STOK|")!==0||!/#$/.test(v))return;kirimHasil=true;var a=v.slice(13,-1).split("|");keRaksa({type:"raksa-stok-hasil",token:tok,hT:a[0]||"-",hK:a[1]||"-"});say("Robot 2 selesai. Hasilnya tampil di Raksa. Tab ini akan tertutup.");setTimeout(function(){try{window.close()}catch(e){}},1500)};ri.addEventListener("input",fin);ri.addEventListener("change",fin);
+ window.addEventListener("message",function(ev){if(ev.origin!==RAKSA_ORIGIN)return;var d=ev.data||{};if(d.type!=="raksa-stok-file"||d.token!==tok||files!==null)return;
+  if(!d.ada){files=false;say("Data batch tidak ditemukan di Raksa. Muat ulang Raksa lalu jalankan ulang.","bad");return}
+  files={tambah:d.tambah,kurang:d.kurang};
+  var meta={lbl:d.lbl||null,nama:d.nama||null};try{["tambah","kurang"].forEach(function(x){if(files[x]){localStorage.setItem("raksa-"+tok+"-"+x,b64(files[x]));if(meta.nama&&meta.nama[x])localStorage.setItem("raksa-"+tok+"-"+x+"-nama",meta.nama[x].replace(/[\\\/:*?"<>|']/g,""))}})}catch(e){}
+  var bc=new BroadcastChannel("raksa-robot");bc.onmessage=function(e){var m=e.data||{};if(m.type==="minta"&&m.token===tok&&(m.part==="tambah"||m.part==="kurang"))bc.postMessage({type:"file",token:tok,part:m.part,buf:files[m.part]||null})};
+  json=makroStok(tok,d.nt,d.nk,folder,uji,meta);done=false;n=0;
+  window.addEventListener("kantuInvokeSuccess",function(){if(done)return;done=true;say("Perintah diterima UI.Vision. Robot 2 berjalan: jangan tutup tab ini dan tab Raksa sampai selesai.")});
+  say("File stok diterima dari Raksa. Mengirim perintah ke UI.Vision\u2026");tunggu()});
+ (function minta(){if(files!==null)return;keRaksa({type:"raksa-minta-stok",token:tok});if(++k>15){say("Raksa tidak mengirim file. Muat ulang Raksa lalu jalankan ulang.","bad");return}setTimeout(minta,800)})();
+ say("Meminta file stok dari Raksa\u2026")}
+var p=new URLSearchParams(location.hash.slice(1));
+if(p.get("mode")==="unduh"){history.replaceState(null,"",location.pathname);modeUnduh(p);return}
+var robot=p.get("robot")||"pesanan",dari=p.get("dari"),sampai=p.get("sampai"),folder=p.get("folder")||"C:\\Users\\Tiftan\\Downloads";
+if(!location.hash){say("Buka halaman ini lewat tombol Jalankan Robot di Raksa.","warn");return}
+history.replaceState(null,"",location.pathname);
+folder=folder.trim().replace(/^["']+|["']+$/g,"").trim().replace(/[\\\/]+$/,"");if(!/^[A-Za-z]:[\\\/][^<>|?*"]*$/.test(folder)&&!/^\/[^<>|?*"]*$/.test(folder)){say("Folder Download tidak valid: "+folder+" . Periksa di Raksa (contoh: C:\\Users\\Nama\\Downloads).","bad");return}
+if(robot==="stok"){mulaiStok(p.get("token"),+p.get("nt")||0,+p.get("nk")||0,folder,p.get("uji")==="1");return}
+if(robot!=="pesanan"||!ok(dari)||!ok(sampai)||dari>sampai){say("Perintah tidak valid. Jalankan ulang dari Raksa.","bad");return}
+var hari=(new Date(sampai)-new Date(dari))/864e5;
+if(hari>92){say("Rentang tanggal maksimal 93 hari.","bad");return}
+var fmt=function(d){return d.split("-").reverse().join("/")};
+document.getElementById("info").textContent="Robot 1: impor pesanan "+fmt(dari)+" s/d "+fmt(sampai)+".";
+var json=makroPesanan(dari,sampai,folder),done=false,n=0;
+var hasil=document.getElementById("hasil"),tungguRaksa=null,tungguTerima=null,diterima=false;
+function tutup(ms){setTimeout(function(){try{window.close()}catch(e){}},ms)}
+document.addEventListener("visibilitychange",function(){if(document.hidden&&diterima)tutup(300)});
+function setHasil(h,baru,pesan){hasil.setAttribute("data-baru",String(baru||0));hasil.setAttribute("data-pesan",pesan||"");hasil.setAttribute("data-hasil",h)}
+window.addEventListener("message",function(ev){if(ev.origin!==RAKSA_ORIGIN)return;var d=ev.data||{};if(d.type==="raksa-upload-diterima"){clearTimeout(tungguTerima);diterima=true;if(document.hidden)tutup(300);say("Raksa menerima file ("+Math.round((d.ukuran||0)/1024)+" KB), sedang memproses…");return}if(d.type!=="raksa-upload-hasil")return;clearTimeout(tungguRaksa);
+ if(d.hasil==="OK"){setHasil("OK",d.baru,"");say("Selesai: file masuk Raksa ("+(d.baru||0)+" pesanan baru, "+(d.berubah||0)+" status berubah). Tab ini akan tertutup sendiri.");tutup(2500)}
+ else{setHasil("GAGAL",0,d.pesan||"Raksa gagal membaca file");say("Raksa gagal membaca file: "+(d.pesan||""),"bad")}});
+document.getElementById("pilih").addEventListener("click",function(){document.getElementById("rkfile").click()});
+function infoFile(){var v=document.getElementById("rkinfo").value;if(!v)return;if(v==="SELESAI-STOK"){say("Robot 2 selesai. Hasilnya tampil di Raksa. Tab ini akan tertutup.");tutup(800);return}var nf=document.getElementById("namafile");nf.hidden=false;nf.textContent="File terunduh: "+v;say("File terunduh. Menyerahkan ke Raksa…")}
+document.getElementById("rkinfo").addEventListener("input",infoFile);document.getElementById("rkinfo").addEventListener("change",infoFile);
+document.getElementById("rkfile").addEventListener("change",function(){var f=this.files&&this.files[0];if(!f)return;
+ if(!window.opener){setHasil("GAGAL",0,"Tab Raksa tidak terhubung. Jalankan ulang dari tombol di Raksa.");say("Tab Raksa tidak terhubung. Jalankan ulang dari tombol di Raksa.","bad");return}
+ say("Menyerahkan "+f.name+" ke Raksa…");
+ f.arrayBuffer().then(function(buf){var msg={type:"raksa-upload",name:f.name,buf:buf,token:TOKEN};
+  try{window.opener.postMessage(msg,RAKSA_ORIGIN)}catch(e){}
+  tungguTerima=setTimeout(function(){say("File tidak sampai ke tab Raksa. Muat ulang tab Raksa lalu jalankan ulang dari tombol di Raksa.","bad")},10000);
+  tungguRaksa=setTimeout(function(){setHasil("GAGAL",0,"Raksa tidak menjawab. Pastikan tab Raksa masih terbuka.");say("Raksa tidak menjawab. Pastikan tab Raksa masih terbuka.","bad")},90000)})});
+window.addEventListener("kantuInvokeSuccess",function(){if(done)return;done=true;document.getElementById("manual").hidden=false;say("Perintah diterima UI.Vision. Robot berjalan. Jangan tutup tab ini dan tab Raksa sampai selesai.")});
+function kirim(){try{window.dispatchEvent(new CustomEvent("kantuSaveAndRunMacro",{detail:{json:json,direct:true,closeRPA:0,storageMode:"browser"}}))}catch(e){}}
+function tunggu(){if(done)return;n++;
+ if(document.documentElement.getAttribute("data-kantu")){say("Mengirim perintah ke UI.Vision…");kirim();
+  setTimeout(function(){if(!done){kirim();setTimeout(function(){if(!done)say("UI.Vision tidak merespons. Cek pengaturan UI.Vision lalu jalankan ulang dari Raksa.","bad")},6000)}},6000);return}
+ if(n>=20){say("UI.Vision belum siap di halaman ini. Pastikan ekstensinya aktif, izin menjalankan makro dari website menyala, dan alamat Raksa ada di whitelist UI.Vision. Lalu jalankan ulang dari Raksa.","warn");return}
+ setTimeout(tunggu,500)}
+say("Menunggu UI.Vision…");setTimeout(tunggu,300);
+})();
+</script>
+</body>
+</html>

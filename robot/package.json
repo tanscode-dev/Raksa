@@ -1,0 +1,7 @@
+{
+  "name": "raksa-robot1",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node robot1.mjs" },
+  "dependencies": { "playwright": "1.56.0" }
+}

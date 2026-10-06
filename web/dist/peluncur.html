@@ -38,6 +38,7 @@ function ok(d){return /^\d{4}-\d{2}-\d{2}$/.test(d)&&!isNaN(new Date(d+"T00:00:0
 function makroPesanan(dari,sampai,folder){
 var C=[];
 C.push(cmd("comment","Robot 1 via peluncur: pesanan "+dari+" s/d "+sampai));
+C.push(cmd("store","nodisplay","!replayspeed","Jalan dalam diam: jendela UI.Vision diperkecil jadi tombol Stop / Show GUI"));
 C.push(cmd("selectWindow","tab=open",BS_PESANAN,"Buka halaman Pesanan BigSeller (sudah login)"));
 C.push(cmd("pause","5000"));
 C.push(cmd("store","300","!TIMEOUT_DOWNLOAD"));
@@ -97,6 +98,7 @@ function jsCekBaris(tok){return "var n=[].slice.call(document.querySelectorAll('
 function makroStok(token,nt,nk,folder,uji,meta){meta=meta||{};var LB=meta.lbl||{},NM=meta.nama||{};
 var C=[],parts=[];if(nt>0)parts.push(["tambah",nt,"Penambahan"]);if(nk>0)parts.push(["kurang",nk,"Pengurangan"]);
 C.push(cmd("comment","Robot 2 via peluncur: kirim stok ("+nt+" SKU tambah, "+nk+" SKU kurang) token "+token));
+C.push(cmd("store","nodisplay","!replayspeed","Jalan dalam diam: jendela UI.Vision diperkecil jadi tombol Stop / Show GUI"));
 C.push(cmd("store","-","hasil_tambah"));C.push(cmd("store","-","hasil_kurang"));
 C.push(cmd("store","120","!TIMEOUT_DOWNLOAD"));
 parts.forEach(function(pt){var P=pt[0],n=pt[1],L=pt[2],tok=(LB[P]||"Raksa-"+token+"-"+P).replace(/['"\\]/g,""),fname=(NM[P]||"raksa_"+P+"_"+token+".xlsx").replace(/[\\\/:*?"<>|']/g,""),syarat=uji&&P==="kurang"&&nt>0;
@@ -230,7 +232,7 @@ document.getElementById("rkfile").addEventListener("change",function(){var f=thi
   tungguTerima=setTimeout(function(){say("File tidak sampai ke tab Raksa. Muat ulang tab Raksa lalu jalankan ulang dari tombol di Raksa.","bad")},10000);
   tungguRaksa=setTimeout(function(){setHasil("GAGAL",0,"Raksa tidak menjawab. Pastikan tab Raksa masih terbuka.");say("Raksa tidak menjawab. Pastikan tab Raksa masih terbuka.","bad")},90000)})});
 window.addEventListener("kantuInvokeSuccess",function(){if(done)return;done=true;document.getElementById("manual").hidden=false;say("Perintah diterima UI.Vision. Robot berjalan. Jangan tutup tab ini dan tab Raksa sampai selesai.")});
-function kirim(){try{window.dispatchEvent(new CustomEvent("kantuSaveAndRunMacro",{detail:{json:json,direct:true,closeRPA:0,storageMode:"browser"}}))}catch(e){}}
+function kirim(){try{window.dispatchEvent(new CustomEvent("kantuSaveAndRunMacro",{detail:{json:json,direct:true,closeRPA:1,storageMode:"browser"}}))}catch(e){}}
 function tunggu(){if(done)return;n++;
  if(document.documentElement.getAttribute("data-kantu")){say("Mengirim perintah ke UI.Vision…");kirim();
   setTimeout(function(){if(!done){kirim();setTimeout(function(){if(!done)say("UI.Vision tidak merespons. Cek pengaturan UI.Vision lalu jalankan ulang dari Raksa.","bad")},6000)}},6000);return}

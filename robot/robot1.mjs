@@ -77,23 +77,53 @@ const fmt = (s) => s.split("-").reverse().join("/");
 
 class Gagal extends Error {}
 
+let RUN_ID = null;
+// Login BigSeller. Halaman login selalu meminta kode gambar (captcha). Robot TIDAK
+// mengisinya sendiri: gambar dikirim ke Raksa, Owner/Admin mengetik kodenya di Raksa,
+// lalu robot melanjutkan. Setelah berhasil, sesi disimpan supaya jadwal berikutnya
+// tidak perlu login (dan tidak perlu captcha) lagi.
 async function login(page) {
   log("Membuka halaman login BigSeller");
   await page.goto(BS_LOGIN, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(3000);
   if (!/login/i.test(page.url())) return; // sesi lama masih berlaku
-  const akun = page.locator("input[type=email], input[name*=account i], input[name*=email i], input[placeholder*=mail i], input[placeholder*=akun i], input[type=text]").first();
-  const sandi = page.locator("input[type=password]").first();
-  await akun.fill(EMAIL);
-  await sandi.fill(SANDI);
-  const tombol = page.locator("button[type=submit], button:has-text('Masuk'), button:has-text('Login'), button:has-text('Log In'), .login-btn").first();
-  await tombol.click();
-  await page.waitForTimeout(6000);
-  const teks = (await page.locator("body").innerText().catch(() => "")).slice(0, 4000);
-  if (/captcha|verifikasi|verification|kode otp|otp code|slide to|geser/i.test(teks) && /login/i.test(page.url()))
-    throw new Gagal("BigSeller meminta OTP / captcha dari server GitHub. Robot tidak mengisinya. Jalankan Robot 1 manual (UI.Vision) atau pakai PC kantor.");
-  if (/login/i.test(page.url())) throw new Gagal("Login BigSeller gagal. Periksa BIGSELLER_EMAIL dan BIGSELLER_PASSWORD di GitHub Secrets.");
-  log("Login berhasil");
+  if (!EMAIL || !SANDI) throw new Gagal("Sesi BigSeller habis dan BIGSELLER_EMAIL / BIGSELLER_PASSWORD belum diisi di GitHub Secrets.");
+  for (let coba = 1; coba <= 3; coba++) {
+    await page.locator("input[name=account]").first().fill(EMAIL);
+    await page.locator("input[name=password]").first().fill(SANDI);
+    const setuju = page.locator(".el-checkbox:not(.is-checked) .el-checkbox__inner").first();
+    if (await setuju.count()) await setuju.click().catch(() => {});
+    const kodeInput = page.locator("input[name=picVerificationCode]").first();
+    if (await kodeInput.count()) {
+      const gambar = page.locator("xpath=(//input[@name='picVerificationCode']/ancestor::*[.//img][1]//img)[1]");
+      const png = await gambar.screenshot().catch(() => null) || await page.screenshot({ clip: { x: 0, y: 0, width: 800, height: 600 } });
+      await ubahRun(RUN_ID, {
+        captcha_img: "data:image/png;base64," + png.toString("base64"), captcha_jawab: null,
+        captcha_minta: new Date().toISOString(),
+        hasil: "Menunggu kode captcha BigSeller dari Owner/Admin di Raksa",
+      });
+      log(`Menunggu kode captcha diketik di Raksa (percobaan ${coba})`);
+      let jawab = null;
+      for (let i = 0; i < 200 && !jawab; i++) {           // ±10 menit
+        await page.waitForTimeout(3000);
+        const r = await sb(`/rest/v1/robot_run?id=eq.${RUN_ID}&select=captcha_jawab`);
+        jawab = r && r[0] && r[0].captcha_jawab;
+      }
+      if (!jawab) throw new Gagal("Tidak ada yang mengisi kode captcha BigSeller dalam 10 menit. Jalankan ulang Robot 1 lalu isi kodenya di Raksa.");
+      await ubahRun(RUN_ID, { captcha_img: null, hasil: null });
+      await kodeInput.fill(String(jawab).trim());
+    }
+    await page.locator("button:has-text('Log In'), button:has-text('Masuk'), button:has-text('Login')").first().click();
+    await page.waitForTimeout(6000);
+    if (!/login/i.test(page.url())) { log("Login berhasil"); return; }
+    const teks = (await page.locator("body").innerText().catch(() => "")).slice(0, 2000);
+    if (/otp|sms|kode verifikasi dikirim|verification code (has been )?sent/i.test(teks))
+      throw new Gagal("BigSeller meminta OTP (SMS/email). Robot tidak bisa melanjutkan; jalankan Robot 1 manual.");
+    log("Login belum berhasil (kode salah atau kedaluwarsa), mengulang");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(3000);
+  }
+  throw new Gagal("Login BigSeller gagal 3 kali. Periksa kode captcha, BIGSELLER_EMAIL, dan BIGSELLER_PASSWORD.");
 }
 
 async function ekspor(page) {
@@ -157,6 +187,7 @@ async function main() {
     robot: "ROBOT1", sumber: "GITHUB", status: "BERJALAN", oleh: "Robot GitHub",
     keterangan: `Impor pesanan ${fmt(dari)} s/d ${fmt(sampai)}`, dari_tgl: dari, sampai_tgl: sampai, log_url: LOG_URL,
   });
+  RUN_ID = run.id;
   log("Robot 1 mulai, run", run.id);
 
   const browser = await chromium.launch({ headless: true });
@@ -171,6 +202,7 @@ async function main() {
   try {
     if (!sesi && (!EMAIL || !SANDI)) throw new Gagal("BIGSELLER_EMAIL / BIGSELLER_PASSWORD belum diisi di GitHub Secrets.");
     if (!sesi) await login(page);
+    await unggah(SESI_PATH, JSON.stringify(await context.storageState()), "application/json", SESI_BUCKET).catch(() => {});
     const { isi } = await ekspor(page);
     // simpan sesi supaya jadwal berikutnya tidak perlu login ulang (mengurangi risiko OTP)
     await unggah(SESI_PATH, JSON.stringify(await context.storageState()), "application/json", SESI_BUCKET).catch(() => {});
@@ -182,7 +214,7 @@ async function main() {
   } catch (e) {
     await page.screenshot({ path: "gagal.png", fullPage: true }).catch(() => {});
     const pesan = e instanceof Gagal ? e.message : `Robot berhenti: ${String(e.message || e).slice(0, 300)}`;
-    await ubahRun(run.id, { status: "GAGAL", selesai: new Date().toISOString(), hasil: pesan }).catch(() => {});
+    await ubahRun(run.id, { status: "GAGAL", selesai: new Date().toISOString(), hasil: pesan, captcha_img: null }).catch(() => {});
     console.error(pesan);
     process.exitCode = 1;
   } finally {

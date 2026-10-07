@@ -126,14 +126,62 @@ async function login(page) {
   throw new Gagal("Login BigSeller gagal 3 kali. Periksa kode captcha, BIGSELLER_EMAIL, dan BIGSELLER_PASSWORD.");
 }
 
+// Tutup pengumuman/panduan BigSeller yang sering muncul setelah login baru dan menutupi halaman.
+async function tutupPopup(page) {
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Escape").catch(() => {});
+    const n = await page.evaluate(() => {
+      const terlihat = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none"; };
+      let klik = 0;
+      // Hanya jendela pengumuman (modal/dialog/notifikasi). Tidak pernah mengklik tombol di halaman pesanan itu sendiri.
+      const wadah = [...document.querySelectorAll(".ant-modal-wrap, .el-dialog__wrapper, .el-message-box__wrapper, .ant-notification, .el-notification")].filter(terlihat);
+      for (const w of wadah) {
+        const tutup = w.querySelector(".ant-modal-close, .el-dialog__headerbtn, .el-message-box__headerbtn, .ant-notification-notice-close, .el-notification__closeBtn");
+        if (tutup && terlihat(tutup)) { tutup.click(); klik++; continue; }
+        const tombol = [...w.querySelectorAll("button")].filter(terlihat)
+          .find((b) => /^(tutup|close|ok|oke|mengerti|saya mengerti|got it|lewati|skip|nanti|later|i know|saya tahu)$/i.test((b.innerText || "").trim()));
+        if (tombol) { tombol.click(); klik++; }
+      }
+      // Lapisan panduan (tour) yang menutupi layar: cukup tombol silang/lewati di dalam lapisan itu.
+      for (const w of [...document.querySelectorAll("[class*='driver-popover'], [class*='introjs-tooltip'], [class*='guide-popover']")].filter(terlihat)) {
+        const t = [...w.querySelectorAll("button, a")].filter(terlihat).find((b) => /^(×|x|tutup|close|lewati|skip|selesai|done|mengerti|got it)$/i.test((b.innerText || "").trim()));
+        if (t) { t.click(); klik++; }
+      }
+      return klik;
+    }).catch(() => 0);
+    if (!n) break;
+    await page.waitForTimeout(800);
+  }
+}
+
+// Isi singkat jendela yang masih terbuka (untuk pesan gagal).
+async function popupTerbuka(page) {
+  return page.evaluate(() => [...document.querySelectorAll(".ant-modal-wrap, .el-dialog__wrapper, .el-message-box__wrapper, [role=dialog]")]
+    .filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).display !== "none"; })
+    .map((el) => (el.innerText || "").replace(/\s+/g, " ").trim().slice(0, 120)).filter(Boolean).join(" | ")).catch(() => "");
+}
+
 async function ekspor(page) {
   log("Membuka halaman Pesanan");
   await page.goto(BS_PESANAN, { waitUntil: "domcontentloaded" });
   await page.waitForTimeout(6000);
   if (/login/i.test(page.url())) { await login(page); await page.goto(BS_PESANAN, { waitUntil: "domcontentloaded" }); await page.waitForTimeout(6000); }
+  await tutupPopup(page);
 
   log(`Periode Waktu Pesanan Dibuat ${dari} s/d ${sampai}`);
-  await page.locator("xpath=//input[contains(@class,'ant-calendar-range-picker-input') and @placeholder='Waktu Mulai']").first().click();
+  // Pilih kolom tanggal yang terlihat (ada salinan tersembunyi di halaman).
+  const kalender = page.locator("input.ant-calendar-range-picker-input[placeholder='Waktu Mulai']:visible").first();
+  try {
+    await kalender.click({ timeout: 15000 });
+  } catch {
+    log("Kolom tanggal tertutup sesuatu, mencoba menutup jendela lagi");
+    await tutupPopup(page);
+    try { await kalender.click({ timeout: 10000 }); }
+    catch {
+      const p = await popupTerbuka(page);
+      throw new Gagal("Tidak bisa membuka kalender di halaman Pesanan BigSeller" + (p ? `. Jendela yang terbuka: ${p}` : "."));
+    }
+  }
   await page.waitForTimeout(900);
   const mulai = page.locator("xpath=//input[contains(@class,'ant-calendar-input') and @placeholder='Waktu Mulai']").first();
   await mulai.fill(`${dari} 00:00:00`);
@@ -209,10 +257,13 @@ async function main() {
     const jam = new Date(Date.now() + 7 * 3600e3).toISOString().slice(11, 19).replace(/:/g, "");
     const path = `pesanan/${sampai}_${jam}_${run.id.slice(0, 8)}.xlsx`;
     await unggah(path, isi, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    await ubahRun(run.id, { status: "BERHASIL", selesai: new Date().toISOString(), file_path: path });
+    await ubahRun(run.id, { status: "BERHASIL", selesai: new Date().toISOString(), file_path: path, debug_img: null });
     log("Selesai: file dititipkan ke Raksa", path);
   } catch (e) {
     await page.screenshot({ path: "gagal.png", fullPage: true }).catch(() => {});
+    // Simpan juga tangkapan layar kecil di robot_run.debug_img supaya penyebab gagal bisa dilihat tanpa mengunduh artefak.
+    const kecil = await page.screenshot({ type: "jpeg", quality: 45 }).catch(() => null);
+    if (kecil) await ubahRun(run.id, { debug_img: "data:image/jpeg;base64," + kecil.toString("base64") }).catch(() => {});
     const pesan = e instanceof Gagal ? e.message : `Robot berhenti: ${String(e.message || e).slice(0, 300)}`;
     await ubahRun(run.id, { status: "GAGAL", selesai: new Date().toISOString(), hasil: pesan, captcha_img: null }).catch(() => {});
     console.error(pesan);

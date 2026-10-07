@@ -128,7 +128,7 @@ async function login(page) {
 
 // Tutup pengumuman/panduan BigSeller yang sering muncul setelah login baru dan menutupi halaman.
 async function tutupPopup(page) {
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 8; i++) {
     await page.keyboard.press("Escape").catch(() => {});
     const n = await page.evaluate(() => {
       const terlihat = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && cs.display !== "none"; };
@@ -147,6 +147,14 @@ async function tutupPopup(page) {
         const t = [...w.querySelectorAll("button, a")].filter(terlihat).find((b) => /^(×|x|tutup|close|lewati|skip|selesai|done|mengerti|got it)$/i.test((b.innerText || "").trim()));
         if (t) { t.click(); klik++; }
       }
+      // Panduan fitur BigSeller (mis. "language_switch_guide") dengan lapisan gelap yang menutupi halaman.
+      for (const w of [...document.querySelectorAll("[class*='guide']")].filter(terlihat)) {
+        const t = [...w.querySelectorAll("button, a, span")].filter(terlihat).filter((b) => b.children.length === 0)
+          .find((b) => /^(×|x|tutup|close|ok|oke|mengerti|saya mengerti|saya tahu|tahu|got it|i know|lewati|skip|selesai|done|berikutnya|next)$/i.test((b.innerText || "").trim()));
+        if (t) { t.click(); klik++; }
+      }
+      // Lapisan gelap panduan yang masih tersisa dihapus dari tampilan (hanya tampilan, tidak mengubah data).
+      for (const m of [...document.querySelectorAll("[class*='guide_mask'], [class*='guide-mask'], [class*='guideMask']")].filter(terlihat)) { m.remove(); klik++; }
       return klik;
     }).catch(() => 0);
     if (!n) break;

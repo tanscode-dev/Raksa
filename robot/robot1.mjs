@@ -14,7 +14,8 @@
 import { chromium } from "playwright";
 import fs from "node:fs/promises";
 
-const URL_SB = (process.env.SUPABASE_URL || "").replace(/\/$/, "");
+// Ambil hanya alamat dasar project (https://xxx.supabase.co), walau secret diisi dengan /rest/v1 atau garis miring di akhir.
+const URL_SB = (() => { const v = (process.env.SUPABASE_URL || "").trim(); try { return new URL(v).origin; } catch { return v.replace(/\/+$/, ""); } })();
 const KEY = process.env.SUPABASE_SERVICE_KEY || "";
 const EMAIL = process.env.BIGSELLER_EMAIL || "";
 const SANDI = process.env.BIGSELLER_PASSWORD || "";

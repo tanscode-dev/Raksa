@@ -161,6 +161,31 @@ async function popupTerbuka(page) {
     .map((el) => (el.innerText || "").replace(/\s+/g, " ").trim().slice(0, 120)).filter(Boolean).join(" | ")).catch(() => "");
 }
 
+// Keterangan singkat kenapa kolom tanggal tidak bisa diklik (untuk perbaikan robot).
+async function diagnosaKalender(page) {
+  return page.evaluate(() => {
+    const out = [`url=${location.pathname}${location.search}`, `layar=${innerWidth}x${innerHeight}`];
+    const ins = [...document.querySelectorAll("input[placeholder='Waktu Mulai']")];
+    out.push(`kolom=${ins.length}`);
+    ins.slice(0, 4).forEach((el, n) => {
+      const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+      let tutup = "";
+      if (r.width && r.height) {
+        const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const atas = document.elementFromPoint(x, y);
+        if (atas && atas !== el && !el.contains(atas) && !(atas.contains && atas.contains(el))) tutup = ` ditutup=${atas.tagName}.${String(atas.className).slice(0, 60)}`;
+      }
+      let sembunyi = ""; let p = el;
+      while (p && p !== document.body) { const c = getComputedStyle(p); if (c.display === "none" || c.visibility === "hidden") { sembunyi = ` induk-sembunyi=${p.tagName}.${String(p.className).slice(0, 50)}`; break; } p = p.parentElement; }
+      out.push(`#${n} ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)} vis=${cs.visibility}${tutup}${sembunyi}`);
+    });
+    const label = [...document.querySelectorAll("button, a, span, div")].filter((e) => e.children.length === 0)
+      .map((e) => (e.innerText || "").trim()).filter((t) => /pencarian lanjutan|lebih banyak|filter|waktu pesanan|advanced/i.test(t)).slice(0, 6);
+    if (label.length) out.push(`label=${label.join("/")}`);
+    return out.join("; ").slice(0, 900);
+  }).catch((e) => "diagnosa gagal: " + e.message);
+}
+
 async function ekspor(page) {
   log("Membuka halaman Pesanan");
   await page.goto(BS_PESANAN, { waitUntil: "domcontentloaded" });
@@ -176,10 +201,22 @@ async function ekspor(page) {
   } catch {
     log("Kolom tanggal tertutup sesuatu, mencoba menutup jendela lagi");
     await tutupPopup(page);
-    try { await kalender.click({ timeout: 10000 }); }
+    try { await kalender.click({ timeout: 8000 }); }
     catch {
-      const p = await popupTerbuka(page);
-      throw new Gagal("Tidak bisa membuka kalender di halaman Pesanan BigSeller" + (p ? `. Jendela yang terbuka: ${p}` : "."));
+      // Cadangan: buka kalender lewat JavaScript langsung pada komponen tanggalnya.
+      await page.evaluate(() => {
+        const i = document.querySelector("input.ant-calendar-range-picker-input[placeholder='Waktu Mulai']");
+        const t = i && (i.closest(".ant-calendar-picker") || i);
+        if (t) { t.scrollIntoView({ block: "center" }); t.click(); }
+      }).catch(() => {});
+      await page.waitForTimeout(1500);
+      const terbuka = await page.locator("input.ant-calendar-input[placeholder='Waktu Mulai']:visible").count().catch(() => 0);
+      if (!terbuka) {
+        const p = await popupTerbuka(page);
+        const d = await diagnosaKalender(page);
+        throw new Gagal("Tidak bisa membuka kalender di halaman Pesanan BigSeller" + (p ? `. Jendela yang terbuka: ${p}` : "") + `. Diagnosa: ${d}`);
+      }
+      log("Kalender terbuka lewat cadangan JavaScript");
     }
   }
   await page.waitForTimeout(900);

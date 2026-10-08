@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Robot 1 Raksa: ambil pesanan BigSeller (Playwright, GitHub Actions)",
-  "scripts": { "robot1": "node robot1.mjs" },
-  "dependencies": { "playwright": "1.48.2" }
+  "description": "Robot Raksa: Robot 1 ambil pesanan & Robot 2 kirim stok BigSeller (Playwright, GitHub Actions)",
+  "scripts": {
+    "robot1": "node robot1.mjs",
+    "robot2": "node robot2.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.48.2",
+    "xlsx": "0.18.5"
+  }
 }

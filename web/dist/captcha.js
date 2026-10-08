@@ -34,8 +34,8 @@
     var w = document.createElement("div");
     w.id = "rc-wrap";
     w.innerHTML =
-      '<div id="rc-box" role="dialog" aria-modal="true"><h3>Robot 1 butuh kode captcha</h3>' +
-      "<p>Robot sedang login ke BigSeller. Ketik kode pada gambar di bawah supaya robot bisa lanjut mengambil pesanan.</p>" +
+      '<div id="rc-box" role="dialog" aria-modal="true"><h3>Robot BigSeller butuh kode captcha</h3>' +
+      "<p>Robot sedang login ke BigSeller. Ketik kode pada gambar di bawah supaya robot bisa lanjut bekerja.</p>" +
       '<img alt="Kode captcha BigSeller" src="' + run.captcha_img + '">' +
       '<input id="rc-kode" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Kode pada gambar">' +
       '<div class="rc-btn"><button id="rc-nanti" type="button">Nanti</button><button id="rc-kirim" type="button">Kirim ke robot</button></div></div>';

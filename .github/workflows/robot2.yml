@@ -1,0 +1,51 @@
+name: Robot 2 - kirim stok ke BigSeller
+
+on:
+  schedule:
+    # 19.00 WIB (= 12.00 UTC), Senin–Sabtu. Hanya jalan bila "Robot 2 otomatis" dinyalakan di Raksa
+    # dan ada stok Siap impor. Catatan: jadwal GitHub kadang terlambat 5–15 menit.
+    - cron: "0 12 * * 1-6"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "uji = cek halaman & jendela impor tanpa mengubah stok; kirim = kirim semua stok Siap impor sekarang"
+        type: choice
+        options: [uji, kirim]
+        default: uji
+
+concurrency:
+  group: robot2
+  cancel-in-progress: false
+
+jobs:
+  robot2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: robot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pasang Playwright
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Jalankan Robot 2
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          BIGSELLER_EMAIL: ${{ secrets.BIGSELLER_EMAIL }}
+          BIGSELLER_PASSWORD: ${{ secrets.BIGSELLER_PASSWORD }}
+          MODE: ${{ github.event_name == 'schedule' && 'otomatis' || github.event.inputs.mode }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node robot2.mjs
+      - name: Simpan tangkapan layar bila gagal
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot2-gagal
+          path: robot/gagal.png
+          retention-days: 7

@@ -1,8 +1,8 @@
 // Service worker Raksa: membuat aplikasi bisa dipasang (PWA) dan tetap terbuka
 // saat internet putus sebentar. Data selalu diambil dari server; yang disimpan
 // di sini hanya file aplikasinya.
-const CACHE = "raksa-1.0.2610091400";
-const INTI = ["/", "/boot.js?v=1.0.2610091400", "/app.js?v=1.0.2610091400", "/raksa.css?v=1.0.2610091400", "/icon.svg", "/manifest.webmanifest"];
+const CACHE = "raksa-1.0.2610091700";
+const INTI = ["/", "/boot.js?v=1.0.2610091700", "/app.js?v=1.0.2610091700", "/raksa.css?v=1.0.2610091700", "/icon.svg", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(INTI)).then(() => self.skipWaiting()));

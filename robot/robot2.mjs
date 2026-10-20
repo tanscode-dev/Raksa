@@ -226,6 +226,13 @@ async function kirimBagian(page, part, rows, buf, tok) {
   const file = `/tmp/raksa_${part}_${tok}.xlsx`;
   await fs.writeFile(file, buf);
   await bukaHalaman(page, part);
+  // Jangan impor kalau masih ada batch Raksa lama yang Pending (belum dikonfirmasi) di BigSeller:
+  // kalau batch lama itu nanti dikonfirmasi, stok akan berubah dua kali.
+  if (MODE !== "uji") {
+    const lama = await page.evaluate(() => [...document.querySelectorAll(".list_items_out .items_tit")].map((t) => (t.textContent || "").match(/Raksa-R2-\d+-(tambah|kurang)/)).filter(Boolean).map((m) => m[0])).catch(() => []);
+    if (lama.length)
+      return { ok: false, belumKirim: true, skuGagal: null, pesan: `${L}: TIDAK dikirim karena masih ada batch Raksa lama di Pending BigSeller (${[...new Set(lama)].join(", ")}). Hapus batch lama itu di BigSeller (ikon tempat sampah), lalu jalankan Robot 2 lagi. Stok di Raksa tetap Siap impor.` };
+  }
   await bukaImpor(page);
   await page.locator("xpath=//div[contains(@class,'ant-modal')]//textarea[contains(@class,'noteText')]").first().fill(tok);
   await page.locator("xpath=//div[contains(@class,'ant-modal')]//input[@type='file']").first().setInputFiles(file);
@@ -244,7 +251,12 @@ async function kirimBagian(page, part, rows, buf, tok) {
   if (h.G > 0) {
     const atas = pesanImpor.toUpperCase();
     skuGagal = new Set(rows.map((r) => r.sku).filter((s) => atas.includes(s.toUpperCase())));
-    if (skuGagal.size !== h.G) skuGagal = null; // tidak bisa dipastikan SKU mana yang gagal
+    if (skuGagal.size !== h.G) {
+      // BigSeller menyebut nomor baris ("Baris 10，SKU tidak ada ..."). Baris 1 = judul kolom, jadi baris N = rows[N-2].
+      const nomor = [...new Set([...pesanImpor.matchAll(/Baris\s*(\d+)/gi)].map((m) => +m[1]))];
+      const dariBaris = new Set(nomor.map((n) => rows[n - 2] && rows[n - 2].sku).filter(Boolean));
+      skuGagal = nomor.length === h.G && dariBaris.size === h.G ? dariBaris : null; // tidak bisa dipastikan SKU mana yang gagal
+    }
   }
   await page.locator("xpath=(//button[normalize-space()='Tutup'])[last()]").click().catch(() => {});
   if (MODE === "uji") return { ok: h.G > 0, uji: true, pesan: `uji: berhasil ${h.B}, gagal ${h.G}. ${pesanImpor.slice(0, 300)}` };
@@ -345,6 +357,11 @@ async function main() {
       log(h.pesan);
       ringkas.push(h.pesan);
       if (MODE === "uji") continue;
+      if (h.belumKirim) { // belum ada yang diimpor: kembalikan ke Siap impor
+        sukses[part] = false; adaGagal = true;
+        await ubahPergerakan(mvBagian, { status: "SIAP_IMPOR", robotRun: null });
+        continue;
+      }
       const gagalSku = h.ok ? (h.skuGagal || new Set()) : (h.skuGagal || skuBagian);
       const mvGagal = mvBagian.filter((m) => gagalSku.has(m.sku));
       const mvOk = h.ok ? mvBagian.filter((m) => !gagalSku.has(m.sku)) : [];

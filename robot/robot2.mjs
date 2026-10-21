@@ -177,12 +177,22 @@ async function tutupPopup(page) {
   }
 }
 async function bukaHalaman(page, part) {
-  await page.goto(BS_URL[part], { waitUntil: "domcontentloaded" });
-  await page.waitForTimeout(5000);
+  await page.goto(BS_URL[part], { waitUntil: "domcontentloaded", timeout: 90000 });
+  await page.waitForTimeout(8000);
   if (/login/i.test(page.url())) { await login(page); await page.goto(BS_URL[part], { waitUntil: "domcontentloaded" }); await page.waitForTimeout(5000); }
   await tutupPopup(page);
 }
-async function bukaImpor(page) {
+async function bukaImpor(page, part) {
+  // BigSeller kadang lambat: coba sampai 3 kali (muat ulang halaman di antaranya).
+  for (let i = 1; ; i++) {
+    try { await bukaImporSekali(page); return; } catch (e) {
+      if (i >= 3) throw e;
+      log(`Menu Impor & Perbarui belum muncul (percobaan ${i}), muat ulang halaman…`);
+      await bukaHalaman(page, part);
+    }
+  }
+}
+async function bukaImporSekali(page) {
   await page.evaluate(() => {
     const b = document.evaluate("(//button[normalize-space()='Impor & Ekspor'])[1]", document, null, 9, null).singleNodeValue;
     if (!b) return;
@@ -193,15 +203,15 @@ async function bukaImpor(page) {
   });
   await page.locator("xpath=(//button[normalize-space()='Impor & Ekspor'])[1]").hover().catch(() => {});
   const item = page.locator("xpath=//li[contains(@class,'ant-dropdown-menu-item') and normalize-space()='Impor & Perbarui']").last();
-  await item.waitFor({ state: "visible", timeout: 20000 });
-  await item.click();
-  await page.locator("xpath=//div[contains(@class,'ant-modal')]//textarea[contains(@class,'noteText')]").first().waitFor({ timeout: 20000 });
+  await item.waitFor({ state: "visible", timeout: 45000 });
+  await item.click({ timeout: 45000 });
+  await page.locator("xpath=//div[contains(@class,'ant-modal')]//textarea[contains(@class,'noteText')]").first().waitFor({ timeout: 45000 });
 }
 const teksJendela = (page) => page.evaluate(() => [...document.querySelectorAll(".ant-modal-wrap, .ant-message, .ant-notification, .el-message, .el-message-box__wrapper")]
   .filter((m) => { const r = m.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(m).display !== "none"; })
   .map((m) => (m.innerText || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" | ")).catch(() => "");
 async function bacaHasil(page, n) {
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 160; i++) { // sampai ±4 menit
     await page.waitForTimeout(1500);
     const r = await page.evaluate((n) => {
       const ms = [...document.querySelectorAll(".ant-modal-wrap")].filter((m) => m.style.display !== "none" && /Berhasil/.test(m.innerText));
@@ -229,11 +239,13 @@ async function kirimBagian(page, part, rows, buf, tok) {
   // Jangan impor kalau masih ada batch Raksa lama yang Pending (belum dikonfirmasi) di BigSeller:
   // kalau batch lama itu nanti dikonfirmasi, stok akan berubah dua kali.
   if (MODE !== "uji") {
+    await page.waitForSelector(".list_items_out, .ant-empty, [class*='empty']", { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(1500);
     const lama = await page.evaluate(() => [...document.querySelectorAll(".list_items_out .items_tit")].map((t) => (t.textContent || "").match(/Raksa-R2-\d+-(tambah|kurang)/)).filter(Boolean).map((m) => m[0])).catch(() => []);
     if (lama.length)
       return { ok: false, belumKirim: true, skuGagal: null, pesan: `${L}: TIDAK dikirim karena masih ada batch Raksa lama di Pending BigSeller (${[...new Set(lama)].join(", ")}). Hapus batch lama itu di BigSeller (ikon tempat sampah), lalu jalankan Robot 2 lagi. Stok di Raksa tetap Siap impor.` };
   }
-  await bukaImpor(page);
+  await bukaImpor(page, part);
   await page.locator("xpath=//div[contains(@class,'ant-modal')]//textarea[contains(@class,'noteText')]").first().fill(tok);
   await page.locator("xpath=//div[contains(@class,'ant-modal')]//input[@type='file']").first().setInputFiles(file);
   await page.waitForTimeout(2000);
@@ -267,8 +279,8 @@ async function kirimBagian(page, part, rows, buf, tok) {
   // Konfirmasi baris batch di daftar Pending.
   await bukaHalaman(page, part);
   let klik = "BARIS:0";
-  for (let j = 0; j < 10 && klik.startsWith("BARIS:"); j++) {
-    await page.waitForTimeout(2000);
+  for (let j = 0; j < 20 && klik.startsWith("BARIS:"); j++) {
+    await page.waitForTimeout(3000);
     klik = await page.evaluate(`(()=>{const rows=${jsBaris(tok)};if(rows.length!==1)return 'BARIS:'+rows.length;const ic=rows[0].querySelector('.item_action .bsicon_inbound, .item_action .bsicon_outbound');if(!ic)return 'IKON-TIDAK-ADA';ic.click();return 'KLIK'})()`);
   }
   let pesanKonf = "";
@@ -334,6 +346,7 @@ async function main() {
     ...(sesi ? { storageState: sesi } : {}),
   });
   const page = await context.newPage();
+  page.setDefaultTimeout(60000);
   const ringkas = [];
   const ditahan = [];
   let adaGagal = false;

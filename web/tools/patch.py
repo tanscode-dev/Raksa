@@ -113,6 +113,12 @@ if not m:
     sys.exit("[patch] kartu Data demo tidak ditemukan")
 s = s.replace(m.group(0), '')
 
+# 9b. Tombol pindah aplikasi Business Manager di sidebar (desktop & HP).
+ganti('f.jsx(W,{}),f.jsx("nav",{className:"mt-5 flex-1 space-y-0.5 overflow-auto px-2",children:z(T.go)})',
+      'f.jsx(W,{}),f.jsx(RaksaPindahAplikasi,{peran:n.peran}),f.jsx("nav",{className:"mt-5 flex-1 space-y-0.5 overflow-auto px-2",children:z(T.go)})', ket="pindah aplikasi desktop")
+ganti('f.jsx("nav",{className:"mt-5 space-y-0.5 px-2",children:z(T.go)})',
+      'f.jsx(RaksaPindahAplikasi,{peran:n.peran}),f.jsx("nav",{className:"mt-5 space-y-0.5 px-2",children:z(T.go)})', ket="pindah aplikasi HP")
+
 # 10. Alamat Raksa produksi & folder download per laptop.
 ganti('RK_URL="https://claude.ai/artifact/Svdq13aYMXcVWfCPNaywcV"', 'RK_URL=location.origin+"/"')
 # Peluncur robot kini ada di domain Raksa sendiri (/peluncur), satu asal dengan aplikasi.

@@ -79,7 +79,7 @@ const RAKSA_APLIKASI = [
   ["Seller Fintech", RAKSA_HUB + "/seller", "#34c08f"],
   ["PayrollKu", RAKSA_HUB + "/app", "#7c95ff"],
   ["Raksa", null, "#f0b43c"],
-  ["Invoice Manager", "https://penerimaan-barang-ten.vercel.app", "#c084fc"],
+  ["Invoice Manager", RAKSA_HUB + "/invoice", "#c084fc"],
 ];
 function RaksaPindahAplikasi({ peran }) {
   if (peran === "KARYAWAN") return null;
@@ -87,7 +87,7 @@ function RaksaPindahAplikasi({ peran }) {
   return __h("div", { className: "mx-3 mt-4 rounded-lg bg-white/5 p-1" },
     __h("div", { className: "px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60" }, "Business Manager"),
     ...RAKSA_APLIKASI.map(([nama, href, warna]) => href
-      ? __h("a", { key: nama, href, className: "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-white/80 hover:bg-white/5 hover:text-white" }, titik(warna), nama)
+      ? __h("a", { key: nama, href, target: "_top", className: "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-white/80 hover:bg-white/5 hover:text-white" }, titik(warna), nama)
       : __h("div", { key: nama, "aria-current": "page", className: "flex items-center gap-2 rounded-md bg-white/10 px-2 py-1.5 text-[13px] font-semibold text-white" }, titik(warna), nama)));
 }
 

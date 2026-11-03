@@ -1,8 +1,10 @@
 // Sekali jalan saat Raksa pindah ke database Business Manager:
 // menyalin sesi login BigSeller (robot-sesi) dan file robot yang belum diproses (robot-inbox)
 // dari Supabase Raksa lama ke Supabase Business Manager. Data lama tidak diubah.
-const LAMA = { url: new URL(process.env.LAMA_URL).origin, key: process.env.LAMA_KEY };
-const BARU = { url: new URL(process.env.BARU_URL).origin, key: process.env.BARU_KEY };
+for (const k of ["LAMA_URL", "LAMA_KEY", "BARU_URL", "BARU_KEY"]) console.log(k, (process.env[k] || "").trim() ? "terisi" : "KOSONG");
+const asal = (v) => { v = (v || "").trim(); try { return new URL(v).origin; } catch { return v.replace(/\/+$/, ""); } };
+const LAMA = { url: asal(process.env.LAMA_URL), key: (process.env.LAMA_KEY || "").trim() };
+const BARU = { url: asal(process.env.BARU_URL), key: (process.env.BARU_KEY || "").trim() };
 const H = (k, x = {}) => ({ apikey: k, Authorization: `Bearer ${k}`, ...x });
 
 async function daftar(sb, bucket, prefix) {

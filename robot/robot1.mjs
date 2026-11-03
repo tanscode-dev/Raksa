@@ -20,6 +20,7 @@ const KEY = process.env.SUPABASE_SERVICE_KEY || "";
 const EMAIL = process.env.BIGSELLER_EMAIL || "";
 const SANDI = process.env.BIGSELLER_PASSWORD || "";
 const HARI = Number(process.env.RENTANG_HARI || 3);           // ambil N hari terakhir (termasuk hari ini)
+const TUNGGU_EKSPOR = Number(process.env.TUNGGU_EKSPOR_MENIT || 5) * 60000; // batas tunggu "Ekspor Selesai"
 const LOG_URL = process.env.GITHUB_RUN_URL || null;
 const BS_PESANAN = "https://www.bigseller.com/web/order/index.htm?status=all";
 const BS_LOGIN = "https://www.bigseller.com/login.htm";
@@ -262,15 +263,23 @@ async function ekspor(page) {
   await page.locator("xpath=//div[contains(@class,'ant-modal')]//button[normalize-space()='Ekspor']").first().click();
 
   log("Menunggu Ekspor Selesai (maks. 5 menit)");
-  await page.locator("xpath=//*[contains(normalize-space(text()),'Ekspor Selesai')]").first().waitFor({ timeout: 300000 });
+  await page.locator("xpath=//*[contains(normalize-space(text()),'Ekspor Selesai')]").first().waitFor({ timeout: TUNGGU_EKSPOR });
   const [unduhan] = await Promise.all([
     page.waitForEvent("download", { timeout: 120000 }),
     page.locator("xpath=//a[contains(@class,'ant-btn') and normalize-space()='Unduh']").first().click(),
   ]);
   const jalur = await unduhan.path();
-  const isi = await fs.readFile(jalur);
+  let isi = await fs.readFile(jalur);
   log(`File terunduh: ${unduhan.suggestedFilename()} (${Math.round(isi.length / 1024)} KB)`);
   if (isi.length < 2000) throw new Gagal("File ekspor BigSeller kosong atau rusak.");
+  // Rentang panjang (jadwal Minggu 30 hari) bisa datang sebagai ZIP berisi beberapa xlsx.
+  // Ekspor harian tetap satu xlsx dan tidak masuk cabang ini.
+  const zip = await import("./gabung-zip.mjs");
+  if (zip.zipBerisiXlsx(isi)) {
+    const g = await zip.gabungZipXlsx(isi);
+    log(`ZIP berisi ${g.jumlahFile} file digabung jadi satu: ${g.jumlahBaris} baris (${Math.round(g.isi.length / 1024)} KB)`);
+    isi = g.isi;
+  }
   return { isi, nama: unduhan.suggestedFilename() };
 }
 

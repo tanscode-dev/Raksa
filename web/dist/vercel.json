@@ -71,11 +71,15 @@
   "rewrites": [
     {
       "source": "/raksa",
-      "destination": "/"
+      "destination": "/index.html"
     },
     {
-      "source": "/raksa/:path*",
-      "destination": "/:path*"
+      "source": "/raksa/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/raksa/:path+",
+      "destination": "/:path+"
     }
   ]
 }

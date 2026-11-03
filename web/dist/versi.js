@@ -5,7 +5,7 @@
   var sudah = false;
   function cek() {
     if (sudah || !VERSI || document.visibilityState === "hidden") return;
-    fetch("/index.html?cek=" + Date.now(), { cache: "no-store" })
+    fetch("/raksa/index.html?cek=" + Date.now(), { cache: "no-store" })
       .then(function (r) { return r.ok ? r.text() : ""; })
       .then(function (t) {
         var m = t.match(/boot\.js\?v=([^"']+)/);

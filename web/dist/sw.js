@@ -1,8 +1,8 @@
 // Service worker Raksa: membuat aplikasi bisa dipasang (PWA) dan tetap terbuka
 // saat internet putus sebentar. Data selalu diambil dari server; yang disimpan
 // di sini hanya file aplikasinya.
-const CACHE = "raksa-1.0.2611031940";
-const INTI = ["/", "/boot.js?v=1.0.2611031940", "/app.js?v=1.0.2611031940", "/raksa.css?v=1.0.2611031940", "/icon.svg", "/manifest.webmanifest"];
+const CACHE = "raksa-1.0.2611032300";
+const INTI = ["/raksa/", "/raksa/boot.js?v=1.0.2611032300", "/raksa/app.js?v=1.0.2611032300", "/raksa/raksa.css?v=1.0.2611032300", "/raksa/icon.svg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(INTI)).then(() => self.skipWaiting()));
@@ -17,7 +17,7 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || u.origin !== location.origin || u.searchParams.has("cek")) return;
   // Halaman: coba internet dulu supaya versi terbaru langsung terpakai.
   if (e.request.mode === "navigate") {
-    e.respondWith(fetch(e.request).catch(() => caches.match("/")));
+    e.respondWith(fetch(e.request).catch(() => caches.match("/raksa/")));
     return;
   }
   e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request).then((res) => {
@@ -31,13 +31,13 @@ self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { isi: e.data && e.data.text() }; }
   e.waitUntil(self.registration.showNotification(d.judul || "Raksa", {
-    body: d.isi || "", tag: d.tag || "raksa", renotify: true, icon: "/icon-192.png", badge: "/icon-192.png",
-    data: { url: d.url || "/" }, requireInteraction: /gagal|error/i.test((d.judul || "") + " " + (d.isi || "")),
+    body: d.isi || "", tag: d.tag || "raksa", renotify: true, icon: "/raksa/icon-192.png", badge: "/raksa/icon-192.png",
+    data: { url: d.url || "/raksa/" }, requireInteraction: /gagal|error/i.test((d.judul || "") + " " + (d.isi || "")),
   }));
 });
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || "/", self.location.origin).href;
+  const url = new URL((e.notification.data && e.notification.data.url) || "/raksa/", self.location.origin).href;
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
     const c = cs.find((x) => x.url.startsWith(self.location.origin));
     if (c) { c.focus(); return c.navigate ? c.navigate(url).catch(() => {}) : null; }

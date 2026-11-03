@@ -1,0 +1,24 @@
+name: Pindah ke Business Manager (sekali jalan)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pindah:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: robot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Salin sesi BigSeller & file robot
+        env:
+          LAMA_URL: ${{ secrets.SUPABASE_URL }}
+          LAMA_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          BARU_URL: ${{ secrets.BM_SUPABASE_URL }}
+          BARU_KEY: ${{ secrets.BM_SUPABASE_SERVICE_KEY }}
+        run: node pindah-bm.mjs

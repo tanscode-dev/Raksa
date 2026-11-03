@@ -35,7 +35,7 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Jalankan Robot 2
         env:
-          SUPABASE_URL: ${{ secrets.BM_SUPABASE_URL }}
+          SUPABASE_URL: https://huewrdenasnocclygtwv.supabase.co
           SUPABASE_SERVICE_KEY: ${{ secrets.BM_SUPABASE_SERVICE_KEY }}
           BIGSELLER_EMAIL: ${{ secrets.BIGSELLER_EMAIL }}
           BIGSELLER_PASSWORD: ${{ secrets.BIGSELLER_PASSWORD }}

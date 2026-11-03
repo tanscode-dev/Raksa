@@ -19,6 +19,6 @@ jobs:
         env:
           LAMA_URL: ${{ secrets.SUPABASE_URL }}
           LAMA_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          BARU_URL: ${{ secrets.BM_SUPABASE_URL }}
+          BARU_URL: https://huewrdenasnocclygtwv.supabase.co
           BARU_KEY: ${{ secrets.BM_SUPABASE_SERVICE_KEY }}
         run: node pindah-bm.mjs

@@ -262,7 +262,7 @@ async function ekspor(page) {
   await page.waitForTimeout(900);
   await page.locator("xpath=//div[contains(@class,'ant-modal')]//button[normalize-space()='Ekspor']").first().click();
 
-  log("Menunggu Ekspor Selesai (maks. 5 menit)");
+  log(`Menunggu Ekspor Selesai (maks. ${TUNGGU_EKSPOR / 60000} menit)`);
   await page.locator("xpath=//*[contains(normalize-space(text()),'Ekspor Selesai')]").first().waitFor({ timeout: TUNGGU_EKSPOR });
   const [unduhan] = await Promise.all([
     page.waitForEvent("download", { timeout: 120000 }),

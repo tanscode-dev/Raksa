@@ -6,14 +6,12 @@
 <title>Raksa</title>
 <meta name="description" content="Raksa — kontrol kasus & stok">
 <meta name="theme-color" content="#0f5a46">
-<link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Raksa">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="/raksa.css?v=1.0.2611031900">
+<link rel="stylesheet" href="/raksa.css?v=1.0.2611031940">
 <style>
   html,body{background:rgb(var(--bg))}
   #raksa-boot[hidden]{display:none}
@@ -50,7 +48,19 @@
 <div id="raksa-boot"><div class="rb-wrap"><div class="rb-card"><div class="rb-muat"><div class="rb-bar"><span style="width:6%"></span></div><p>Membuka Raksa…</p></div></div></div></div>
 <div id="root"></div>
 <noscript>Raksa membutuhkan JavaScript.</noscript>
-<script src="/boot.js?v=1.0.2611031900"></script>
+<script src="/boot.js?v=1.0.2611031940"></script>
+<script>
+/* Raksa sekarang bagian dari Business Manager. Bila dibuka sendiri (bukan di dalam Business Manager),
+   tampilkan ajakan pindah. Tidak menghalangi: robot manual UI.Vision tetap butuh Raksa di tab sendiri. */
+(function(){try{if(window.top!==window||/peluncur/.test(location.pathname))return;
+var d=document.createElement("div");d.id="rk-ke-bm";
+d.style.cssText="position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483000;background:#0f172a;color:#fff;font:13px/1.4 system-ui,sans-serif;padding:10px 12px;border-radius:12px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 6px 24px rgba(0,0,0,.25)";
+d.innerHTML='<span>Raksa sekarang dibuka dari aplikasi <b>Business Manager</b>.</span><a href="https://business-manager-tanscode.vercel.app/raksa" target="_top" style="background:#22c55e;color:#04120a;padding:5px 12px;border-radius:999px;text-decoration:none;font-weight:600">Buka Business Manager</a><button type="button" style="background:none;border:0;color:#94a3b8;cursor:pointer;font:inherit">Tutup</button>';
+d.querySelector("button").onclick=function(){d.remove()};
+var pasang=function(){document.body&&!document.getElementById("rk-ke-bm")&&document.body.appendChild(d)};
+document.readyState==="loading"?document.addEventListener("DOMContentLoaded",pasang):pasang();}catch(e){}})();
+</script>
+
 <script src="/captcha.js?v=2" defer></script>
 <script src="/versi.js?v=1" defer></script>
 </body>

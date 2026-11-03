@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Raksa</title>
+<meta name="description" content="Raksa — kontrol kasus & stok">
+<meta name="theme-color" content="#0f5a46">
+<link rel="icon" href="/raksa/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/raksa/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Raksa">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/raksa/raksa.css?v=1.0.2611032300">
+<style>
+  html,body{background:rgb(var(--bg))}
+  #raksa-boot[hidden]{display:none}
+  .rb-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;
+    background:radial-gradient(1200px 600px at 20% -10%,rgb(var(--brand-100)),transparent 60%),rgb(var(--bg))}
+  .rb-card{width:100%;max-width:400px;background:rgb(var(--surface));border:1px solid rgb(var(--n-200));border-radius:18px;
+    padding:28px 24px;box-shadow:0 20px 50px -20px rgba(9,51,40,.35)}
+  .rb-head{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .rb-nama{font-size:22px;font-weight:800;letter-spacing:-.02em;color:rgb(var(--n-900))}
+  .rb-sub{font-size:12px;font-weight:500;color:rgb(var(--n-500))}
+  .rb-form h1{font-size:17px;font-weight:700;margin:0 0 14px;color:rgb(var(--n-900))}
+  .rb-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:rgb(var(--n-700));margin-bottom:12px}
+  .rb-form input{height:44px;border-radius:10px;border:1px solid rgb(var(--n-200));background:rgb(var(--surface));padding:0 12px;font-size:15px;
+    color:rgb(var(--n-900));font-family:inherit}
+  .rb-form input:focus{outline:none;border-color:rgb(var(--brand-500));box-shadow:0 0 0 3px rgb(var(--brand-100))}
+  .rb-form button{width:100%;height:46px;border:0;border-radius:10px;background:rgb(var(--brand-700));color:#fff;font-weight:700;font-size:15px;
+    font-family:inherit;cursor:pointer;margin-top:4px}
+  .rb-form button:hover{background:rgb(var(--brand-800))}
+  .rb-form button:disabled{opacity:.6;cursor:default}
+  .rb-form button.rb-sek{background:transparent;color:rgb(var(--n-700));border:1px solid rgb(var(--n-200));margin-top:8px}
+  .rb-err{background:#fff1f2;color:#be123c;border-radius:8px;padding:9px 11px;font-size:13px;margin:4px 0 10px}
+  .dark .rb-err{background:#50141e8c;color:#fd96a0}
+  .rb-hint{font-size:12.5px;color:rgb(var(--n-500));margin:12px 0 0;line-height:1.5}
+  .rb-muat p{font-size:13px;color:rgb(var(--n-600));margin:12px 0 0;text-align:center}
+  .rb-bar{height:6px;border-radius:9px;background:rgb(var(--n-100));overflow:hidden}
+  .rb-bar span{display:block;height:100%;background:rgb(var(--brand-600));border-radius:9px;transition:width .25s}
+  .rb-foot{margin-top:16px;font-size:11px;color:rgb(var(--n-400))}
+</style>
+<script>
+  (function(){try{var t=localStorage.getItem("raksa-raksa-theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark")}catch(e){}})();
+</script>
+</head>
+<body>
+<div id="raksa-boot"><div class="rb-wrap"><div class="rb-card"><div class="rb-muat"><div class="rb-bar"><span style="width:6%"></span></div><p>Membuka Raksa…</p></div></div></div></div>
+<div id="root"></div>
+<noscript>Raksa membutuhkan JavaScript.</noscript>
+<script>
+/* Satu aplikasi, satu login: bila Raksa dibuka dari alamat Business Manager (/raksa), sesi login dibaca dari
+   cookie Business Manager (format sama persis dengan @supabase/ssr: sb-<ref>-auth-token, "base64-"+base64url,
+   dipecah per 3180 karakter). Di alamat lama raksa-mu (dipakai robot manual UI.Vision) tetap memakai sesi sendiri. */
+window.__rkBM = location.hostname === "business-manager-tanscode.vercel.app";
+window.__rkKue = (function(){
+  var MAX = 3180, PRE = "base64-";
+  function semua(){ var o = {}; document.cookie.split("; ").forEach(function(c){ if(!c) return; var i = c.indexOf("=");
+    try { o[decodeURIComponent(c.slice(0, i))] = decodeURIComponent(c.slice(i + 1)); } catch(e){} }); return o; }
+  function keB64(t){ var b = new TextEncoder().encode(t), bin = ""; for (var i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000));
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function dariB64(t){ var s = t.replace(/-/g, "+").replace(/_/g, "/"), bin = atob(s + "===".slice((s.length + 3) % 4));
+    return new TextDecoder().decode(Uint8Array.from(bin, function(ch){ return ch.charCodeAt(0); })); }
+  function tulis(n, v, umur){ document.cookie = encodeURIComponent(n) + "=" + encodeURIComponent(v) + "; Path=/; Max-Age=" + umur + "; SameSite=Lax; Secure"; }
+  function potongan(c, k){ return Object.keys(c).filter(function(n){ return n.indexOf(k + ".") === 0 && /^\d+$/.test(n.slice(k.length + 1)); }); }
+  return {
+    getItem: function(k){ var c = semua(), v = c[k]; if (!v){ var ps = []; for (var i = 0; c[k + "." + i]; i++) ps.push(c[k + "." + i]); v = ps.join(""); }
+      if (!v) return null; try { return v.indexOf(PRE) === 0 ? dariB64(v.slice(PRE.length)) : v; } catch(e){ return null; } },
+    setItem: function(k, nilai){ var isi = PRE + keB64(nilai), c = semua();
+      if (isi.length <= MAX){ tulis(k, isi, 34560000); potongan(c, k).forEach(function(n){ tulis(n, "", 0); }); return; }
+      if (c[k] !== undefined) tulis(k, "", 0);
+      var n = Math.ceil(isi.length / MAX); for (var i = 0; i < n; i++) tulis(k + "." + i, isi.slice(i * MAX, (i + 1) * MAX), 34560000);
+      potongan(c, k).filter(function(x){ return +x.slice(k.length + 1) >= n; }).forEach(function(x){ tulis(x, "", 0); }); },
+    removeItem: function(k){ var c = semua(); if (c[k] !== undefined) tulis(k, "", 0); potongan(c, k).forEach(function(n){ tulis(n, "", 0); }); }
+  };
+})();
+</script>
+<script src="/raksa/boot.js?v=1.0.2611032300"></script>
+<script>
+/* Raksa sekarang bagian dari Business Manager. Bila dibuka sendiri (bukan di dalam Business Manager),
+   tampilkan ajakan pindah. Tidak menghalangi: robot manual UI.Vision tetap butuh Raksa di tab sendiri. */
+(function(){try{if(window.__rkBM||window.top!==window||/peluncur/.test(location.pathname))return;
+var d=document.createElement("div");d.id="rk-ke-bm";
+d.style.cssText="position:fixed;left:12px;right:12px;bottom:12px;z-index:2147483000;background:#0f172a;color:#fff;font:13px/1.4 system-ui,sans-serif;padding:10px 12px;border-radius:12px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;box-shadow:0 6px 24px rgba(0,0,0,.25)";
+d.innerHTML='<span>Raksa sekarang dibuka dari aplikasi <b>Business Manager</b>.</span><a href="https://business-manager-tanscode.vercel.app/raksa" target="_top" style="background:#22c55e;color:#04120a;padding:5px 12px;border-radius:999px;text-decoration:none;font-weight:600">Buka Business Manager</a><button type="button" style="background:none;border:0;color:#94a3b8;cursor:pointer;font:inherit">Tutup</button>';
+d.querySelector("button").onclick=function(){d.remove()};
+var pasang=function(){document.body&&!document.getElementById("rk-ke-bm")&&document.body.appendChild(d)};
+document.readyState==="loading"?document.addEventListener("DOMContentLoaded",pasang):pasang();}catch(e){}})();
+</script>
+
+<script src="/raksa/captcha.js?v=2" defer></script>
+<script src="/raksa/versi.js?v=1" defer></script>
+</body>
+</html>

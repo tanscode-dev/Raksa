@@ -70,14 +70,6 @@
   ],
   "rewrites": [
     {
-      "source": "/raksa",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/raksa/",
-      "destination": "/index.html"
-    },
-    {
       "source": "/raksa/:path+",
       "destination": "/:path+"
     }

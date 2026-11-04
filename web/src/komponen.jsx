@@ -288,9 +288,9 @@ function RaksaRobot1Cloud() {
   w.useEffect(() => { muat(); }, [s.robotVersi]);
   const fmt = (x) => {
     if (!x) return "-";
-    const d = new Date(x);
+    const d = new Date(new Date(x).getTime() + 252e5); // WIB
     const p = (n) => String(n).padStart(2, "0");
-    return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${p(d.getUTCHours())}.${p(d.getUTCMinutes())} WIB`;
   };
   const menunggu = (runs || []).filter((r) => r.status === "BERHASIL" && r.file_path && !r.hasil).length;
   const tone = (r) => r.status === "GAGAL" || /^GAGAL/.test(r.hasil || "") ? "bad" : r.status === "BERJALAN" ? "wait" : r.hasil ? "ok" : "warn";
@@ -298,7 +298,7 @@ function RaksaRobot1Cloud() {
     : /^GAGAL/.test(r.hasil || "") ? "Gagal diproses" : r.hasil ? "Masuk Raksa" : "Menunggu diproses";
   return __h(ze, {
     title: "Robot 1 otomatis (server GitHub)",
-    sub: "Mengambil pesanan 3 hari terakhir dari BigSeller setiap Senin–Sabtu pukul 09.00 dan 13.00 WIB",
+    sub: "Jadwal: Senin–Sabtu pukul 09.00 dan 13.00 WIB (pesanan 3 hari terakhir) · Minggu pukul 10.00 WIB (30 hari terakhir, memperbarui status pesanan lama)",
     actions: __h(__F, null,
       menunggu > 0 && __h(be, {
         size: "sm", disabled: sibuk,
@@ -315,7 +315,7 @@ function RaksaRobot1Cloud() {
         ? __h("p", { className: "text-sm text-n-500" }, "Belum ada riwayat. Robot pertama kali berjalan pada jadwal berikutnya, atau tekan “Jalankan sekarang di GitHub” lalu Run workflow.")
         : __h("div", { className: "divide-y divide-n-100 rounded-lg border border-n-100" },
           ...runs.map((r) => __h("div", { key: r.id, className: "flex flex-wrap items-start gap-x-3 gap-y-1 px-3 py-2 text-[12.5px]" },
-            __h("span", { className: "shrink-0 text-n-500 tnum", style: { width: 118 } }, fmt(r.mulai)),
+            __h("span", { className: "shrink-0 text-n-500 tnum", style: { width: 150 } }, fmt(r.mulai)),
             __h(Le, { tone: tone(r) }, label(r)),
             __h("div", { className: "min-w-0 flex-1" },
               __h("div", { className: "font-medium text-n-900" }, r.keterangan || "Impor pesanan BigSeller"),

@@ -139,6 +139,21 @@ ganti('f.jsx("div",{className:"mb-4",children:f.jsx(RkRun1,{})})',
       'f.jsxs("div",{className:"mb-4 space-y-4",children:[f.jsx(RaksaRobot1Cloud,{},"rc"),f.jsx(RkRun1,{},"rm")]})', ket="robot 1 cloud")
 ganti('title:"Robot 1: ambil pesanan dari BigSeller"', 'title:"Robot 1 manual (UI.Vision di laptop ini)"')
 
+# 13. Format waktu: semua jam dalam WIB (Asia/Jakarta, apa pun zona perangkat),
+#     tanggal DD/MM/YYYY, jam "09.15 WIB".
+ganti('Dt=e=>{if(!e)return"-";const t=new Date(e);return isNaN(t)?"-":`${zf(t.getDate())}/${zf(t.getMonth()+1)}/${t.getFullYear()}`}',
+      'Dt=e=>{if(!e)return"-";const t=new Date(e);if(isNaN(t))return"-";const u=new Date(t.getTime()+252e5);return`${zf(u.getUTCDate())}/${zf(u.getUTCMonth()+1)}/${u.getUTCFullYear()}`}', ket="tanggal WIB")
+ganti('rn=e=>{if(!e)return"-";const t=new Date(e);return isNaN(t)?"-":`${Dt(t)} ${zf(t.getHours())}:${zf(t.getMinutes())}`}',
+      'rn=e=>{if(!e)return"-";const t=new Date(e);if(isNaN(t))return"-";const u=new Date(t.getTime()+252e5);return`${Dt(t)} ${zf(u.getUTCHours())}.${zf(u.getUTCMinutes())} WIB`}', ket="tanggal jam WIB")
+ganti('HN=e=>{const t=new Date(e);return`${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`}',
+      'HN=e=>{const u=new Date(new Date(e).getTime()+252e5);return`${String(u.getUTCHours()).padStart(2,"0")}.${String(u.getUTCMinutes()).padStart(2,"0")}`}', ket="jam WIB")
+ganti('Hn=e=>{const[t,r]=e.split("-");return`${_X[+r-1]} ${t.slice(2)}`}',
+      'Hn=e=>{const[t,r]=e.split("-");return`${_X[+r-1]} ${t}`}', ket="label bulan")
+ganti('i=u=>{if(!u)return"";const c=new Date(u),d=h=>String(h).padStart(2,"0");return`${d(c.getDate())} ${a[c.getMonth()]} ${c.getFullYear()} ${d(c.getHours())}:${d(c.getMinutes())}`}',
+      'i=u=>u?rn(u):""', ket="waktu ekspor")
+ganti('${new Date(r.terakhirTerlihat).toLocaleString("id-ID",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"})}',
+      '${rn(r.terakhirTerlihat)}', ket="terakhir terlihat")
+
 # 12. Sisipkan komponen tambahan tepat sebelum komponen aplikasi utama.
 ganti('function cxe(){', komponen + '\nconst __RID="-"+Math.random().toString(36).slice(2,6);\nfunction cxe(){')
 

@@ -1,10 +1,9 @@
 name: Robot 1 - ambil pesanan BigSeller
 
 on:
-  schedule:
-    # 09.00 dan 13.00 WIB (= 02.00 dan 06.00 UTC), Senin–Sabtu. Minggu libur.
-    # Catatan: jadwal GitHub kadang terlambat 5–15 menit.
-    - cron: "0 2,6 * * 1-6"
+  # Jadwal 09.00 dan 13.00 WIB (Senin–Sabtu) dijalankan oleh database Business Manager
+  # (pg_cron → workflow_dispatch) supaya tepat waktu; jadwal GitHub sering terlambat/terlewat
+  # sejak 30/10/2026. Lihat cron.job "robot1-0900-wib" & "robot1-1300-wib".
   workflow_dispatch:
     inputs:
       rentang_hari:

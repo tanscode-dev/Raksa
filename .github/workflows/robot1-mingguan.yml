@@ -5,9 +5,8 @@ name: Robot 1 Mingguan - perbarui status pesanan 30 hari
 # Jadwal harian Robot 1 (Senin–Sabtu, 3 hari) dan Robot 2 tidak berubah.
 
 on:
-  schedule:
-    # 10.00 WIB hari Minggu (= 03.00 UTC). Jadwal GitHub kadang terlambat 5–15 menit.
-    - cron: "0 3 * * 0"
+  # Jadwal Minggu 10.00 WIB dijalankan oleh database Business Manager (cron.job
+  # "robot1-mingguan-minggu-1000-wib") supaya tepat waktu.
   workflow_dispatch:
 
 concurrency:

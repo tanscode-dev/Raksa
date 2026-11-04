@@ -1,16 +1,15 @@
 name: Robot 2 - kirim stok ke BigSeller
 
 on:
-  schedule:
-    # 19.00 WIB (= 12.00 UTC), Senin–Sabtu. Hanya jalan bila "Robot 2 otomatis" dinyalakan di Raksa
-    # dan ada stok Siap impor. Catatan: jadwal GitHub kadang terlambat 5–15 menit.
-    - cron: "0 12 * * 1-6"
+  # Jadwal 19.00 WIB (Senin–Sabtu) dijalankan oleh database Business Manager (cron.job
+  # "robot2-1900-wib") dengan mode "otomatis": hanya jalan bila "Robot 2 otomatis" dinyalakan
+  # di Raksa dan ada stok Siap impor — sama seperti jadwal GitHub sebelumnya.
   workflow_dispatch:
     inputs:
       mode:
-        description: "uji = cek halaman & jendela impor tanpa mengubah stok; kirim = kirim semua stok Siap impor sekarang"
+        description: "uji = cek halaman & jendela impor tanpa mengubah stok; kirim = kirim semua stok Siap impor sekarang; otomatis = seperti jadwal (hanya bila Robot 2 otomatis dinyalakan di Raksa)"
         type: choice
-        options: [uji, kirim]
+        options: [uji, kirim, otomatis]
         default: uji
 
 concurrency:

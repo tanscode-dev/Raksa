@@ -82,11 +82,21 @@ const RAKSA_APLIKASI = [
   ["Invoice Manager", RAKSA_HUB + "/invoice", "#c084fc"],
 ];
 function RaksaPindahAplikasi({ peran }) {
-  if (peran === "KARYAWAN") return null;
+  // Hanya aplikasi yang diizinkan untuk akun ini (public.aplikasi_saya, sama dengan Business Manager).
+  const [apps, setApps] = w.useState(null);
+  w.useEffect(() => {
+    const R = window.__RAKSA;
+    if (!R || !R.sb) { setApps([]); return; }
+    R.sb.rpc("aplikasi_saya").then(({ data }) => setApps(Array.isArray(data) ? data : []), () => setApps([]));
+  }, []);
+  if (apps === null) return null;
+  const KUNCI = { "Seller Fintech": "seller", PayrollKu: "payroll", "Invoice Manager": "invoice" };
+  const daftar = RAKSA_APLIKASI.filter(([nama]) => !KUNCI[nama] || apps.includes(KUNCI[nama]));
+  if (peran === "KARYAWAN" && daftar.length <= 2) return null;
   const titik = (warna) => __h("span", { style: { display: "inline-block", width: 8, height: 8, borderRadius: 9, background: warna, flexShrink: 0 } });
   return __h("div", { className: "mx-3 mt-4 rounded-lg bg-white/5 p-1" },
     __h("div", { className: "px-2 pb-1 pt-1.5 text-[10px] font-bold uppercase tracking-wider text-white/60" }, "Business Manager"),
-    ...RAKSA_APLIKASI.map(([nama, href, warna]) => href
+    ...daftar.map(([nama, href, warna]) => href
       ? __h("a", { key: nama, href, target: "_top", className: "flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-white/80 hover:bg-white/5 hover:text-white" }, titik(warna), nama)
       : __h("div", { key: nama, "aria-current": "page", className: "flex items-center gap-2 rounded-md bg-white/10 px-2 py-1.5 text-[13px] font-semibold text-white" }, titik(warna), nama)));
 }

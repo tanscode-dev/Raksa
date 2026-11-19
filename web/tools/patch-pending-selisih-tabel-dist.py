@@ -1,0 +1,20 @@
+"""Raksa · Rincian "pending tidak sesuai label" tampil sebagai tabel rapi (19 Nov 2026)."""
+import pathlib
+D = pathlib.Path(__file__).resolve().parent.parent / "dist"
+def ganti(s, a, b, n=1):
+    assert s.count(a) == n, (a[:90], s.count(a)); return s.replace(a, b)
+p = D / "app.js"; s = p.read_text()
+if "rkTabelSelisih" in s:
+    print("sudah"); raise SystemExit
+# data terstruktur per baris
+s = ganti(s,
+  'return{key:k.id+":"+y.id,nomor:y.sku,page:"pending",ket:',
+  'return{key:k.id+":"+y.id,nomor:y.sku,page:"pending",label:lb,hitung:dh,selisih:sl,penghitung:y.penghitungAwal||"-",ulang:y.penghitungRak||"",tgl:tgs,kasus:k.id,ket:')
+s = ganti(s, 'aksi:"Lihat rincian",page:"pending",daftar:h.map(', 'aksi:"Lihat rincian",page:"pending",rkTabelSelisih:!0,daftar:h.map(')
+# renderer: tabel untuk kartu selisih
+TABEL = r'''o.daftar&&s===u&&o.rkTabelSelisih?(()=>{const nm=x=>String(x||"-").toLowerCase().replace(/\b\w/g,m=>m.toUpperCase()),th=(t,r)=>f.jsx("th",{style:{padding:"6px 10px",textAlign:r?"right":"left",fontWeight:600,whiteSpace:"nowrap"},children:t},t),td=(v,st)=>({padding:"8px 10px",verticalAlign:"middle",...st}),tot=o.daftar.reduce((a,c)=>a+(c.selisih||0),0);return f.jsxs("div",{className:"mt-3 overflow-auto rounded-lg border border-n-200",children:[f.jsxs("table",{className:"w-full",style:{borderCollapse:"collapse",fontSize:"12.5px",minWidth:"660px"},children:[f.jsx("thead",{children:f.jsxs("tr",{className:"bg-n-50 text-n-500 uppercase",style:{fontSize:"10.5px",letterSpacing:".04em"},children:[th("SKU"),th("Label",1),th("Hitung rak",1),th("Selisih",1),th("Penghitung label"),th("Tanggal"),th("Kasus")]})}),f.jsx("tbody",{children:o.daftar.map(c=>{const sl=c.selisih,warna=sl==null||sl===0?{background:"rgba(120,120,120,.12)"}:sl<0?{background:"rgba(225,29,72,.12)",color:"#e11d48"}:{background:"rgba(217,119,6,.14)",color:"#d97706"};return f.jsxs("tr",{className:"border-t border-n-100",children:[f.jsx("td",{style:td(),children:f.jsx("button",{onClick:()=>a(c.page),className:"font-mono font-semibold text-brand-700",style:{background:"none",border:0,padding:0,cursor:"pointer",textAlign:"left"},title:"Buka di halaman Pending",children:c.nomor})}),f.jsx("td",{className:"tnum",style:td(0,{textAlign:"right"}),children:c.label}),f.jsx("td",{className:"tnum",style:td(0,{textAlign:"right"}),children:c.hitung==null?"–":c.hitung}),f.jsx("td",{style:td(0,{textAlign:"right"}),children:f.jsx("span",{className:"tnum",style:{display:"inline-block",minWidth:"34px",textAlign:"center",borderRadius:"999px",padding:"1px 8px",fontWeight:700,...warna},children:sl==null?"–":(sl>0?"+":"")+sl})}),f.jsxs("td",{style:td(),children:[f.jsx("div",{className:"font-semibold text-n-900",style:c.penghitung==="GA ADA NAMA"?{color:"#e11d48"}:null,children:c.penghitung==="GA ADA NAMA"?"Tanpa nama":nm(c.penghitung)}),c.ulang&&f.jsx("div",{className:"text-n-500",style:{fontSize:"11px"},children:"dihitung ulang: "+nm(c.ulang)})]}),f.jsx("td",{className:"tnum whitespace-nowrap",style:td(),children:c.tgl}),f.jsx("td",{className:"font-mono text-n-500 whitespace-nowrap",style:td(0,{fontSize:"11.5px"}),children:c.kasus})]},c.key)})}),f.jsx("tfoot",{children:f.jsxs("tr",{className:"border-t border-n-200 bg-n-50",children:[f.jsx("td",{style:td(0,{fontWeight:600}),children:o.daftar.length+" barang"}),f.jsx("td",{}),f.jsx("td",{}),f.jsx("td",{className:"tnum",style:td(0,{textAlign:"right",fontWeight:700}),children:(tot>0?"+":"")+tot+" pcs"}),f.jsx("td",{colSpan:3,className:"text-n-500",style:td(0,{fontSize:"11px"}),children:"Klik SKU untuk membuka di halaman Pending"})]})})]})]})})():'''
+s = ganti(s, 'o.daftar&&s===u&&f.jsx("ul",{className:"mt-2 space-y-1",children:o.daftar.map(', TABEL + 'o.daftar&&s===u&&f.jsx("ul",{className:"mt-2 space-y-1",children:o.daftar.map(')
+# tombol: Lihat rincian / Tutup rincian
+s = ganti(s, 'onClick:()=>o.daftar?l(s===u?null:u):a(o.page),children:o.aksi})',
+             'onClick:()=>o.daftar?l(s===u?null:u):a(o.page),children:o.rkTabelSelisih&&s===u?"Tutup rincian":o.aksi})')
+p.write_text(s); print("ok")

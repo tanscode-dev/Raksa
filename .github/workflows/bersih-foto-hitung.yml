@@ -1,0 +1,29 @@
+name: Bersihkan foto lama Hitung Barang
+
+on:
+  # Jadwal harian 03.15 WIB dijalankan oleh database Business Manager (cron.job
+  # "bersih-foto-hitung-0315-wib"). Bisa juga dijalankan manual dari tab Actions.
+  # Terpisah dari Robot 1 & Robot 2.
+  workflow_dispatch:
+
+concurrency:
+  group: bersih-foto-hitung
+  cancel-in-progress: false
+
+jobs:
+  bersih:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: robot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Hapus foto label lama yang cocok (>90 hari)
+        env:
+          SUPABASE_URL: https://huewrdenasnocclygtwv.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.BM_SUPABASE_SERVICE_KEY }}
+        run: node bersih-foto-hitung.mjs

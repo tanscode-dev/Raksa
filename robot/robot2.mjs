@@ -71,12 +71,14 @@ async function notif(judul, isi) {
 }
 
 // ------------------------------------------------------------------ data Raksa
+// Robot 2 khusus usaha Dunia Gelang: semua baca/tulis data Raksa disaring ke usaha ini.
+const USAHA = "fdd98c7e-d5a6-4ffa-b482-6d0d32f1bf49";
 const muatDok = (koleksi, filter = "") =>
-  sb(`/rest/v1/dokumen?koleksi=eq.${koleksi}&dihapus=is.false${filter}&select=id,data`).then((r) => r || []);
+  sb(`/rest/v1/dokumen?company_id=eq.${USAHA}&koleksi=eq.${koleksi}&dihapus=is.false${filter}&select=id,data`).then((r) => r || []);
 async function simpanDok(koleksi, docs) {
   for (let i = 0; i < docs.length; i += 300) {
-    const potong = docs.slice(i, i + 300).map((d) => ({ koleksi, id: String(d.id), data: d, dihapus: false }));
-    await sb("/rest/v1/dokumen?on_conflict=koleksi,id", {
+    const potong = docs.slice(i, i + 300).map((d) => ({ company_id: USAHA, koleksi, id: String(d.id), data: d, dihapus: false }));
+    await sb("/rest/v1/dokumen?on_conflict=company_id,koleksi,id", {
       method: "POST", headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify(potong),
     });
   }
@@ -397,7 +399,7 @@ async function main() {
         // Kasus yang semua pergerakannya sudah diimpor → DIIMPOR (sama seperti tombol "Tandai sudah diimpor").
         const caseIds = [...new Set(selesai.map((m) => m.caseId).filter(Boolean))];
         if (caseIds.length) {
-          const kasus = (await sb(`/rest/v1/dokumen?koleksi=eq.cases&dihapus=is.false&id=in.(${caseIds.map((c) => `"${c}"`).join(",")})&select=id,data`)) || [];
+          const kasus = (await sb(`/rest/v1/dokumen?company_id=eq.${USAHA}&koleksi=eq.cases&dihapus=is.false&id=in.(${caseIds.map((c) => `"${c}"`).join(",")})&select=id,data`)) || [];
           const semuaBaru = (await muatDok("movements")).map((r) => r.data);
           const ubah = kasus.map((c) => c.data).filter((c) => c && c.status === "DISETUJUI" && !semuaBaru.some((m) => m.caseId === c.id && ["SIAP_IMPOR", "DIKIRIM_ROBOT", "GAGAL_BIGSELLER"].includes(m.status)))
             .map((c) => ({ ...c, status: "DIIMPOR" }));

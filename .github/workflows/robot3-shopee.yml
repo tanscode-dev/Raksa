@@ -1,0 +1,44 @@
+name: Robot 3 - Shopee (Penghasilan & Saldo)
+
+# Dipicu oleh Business Manager (tombol "Ambil sekarang" di Seller Fintech, jadwal Senin & tanggal 3).
+# Catatan jalannya ada di tabel shopee_robot_run (run_id).
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "ID catatan shopee_robot_run"
+        required: true
+      mode:
+        description: "biasa / eksplor (hanya login & membaca daftar toko)"
+        required: false
+        default: "biasa"
+
+concurrency:
+  group: robot3-shopee
+  cancel-in-progress: false
+
+jobs:
+  robot3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: robot
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pasang Playwright
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Jalankan Robot Shopee
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.BM_SUPABASE_SERVICE_KEY }}
+          SHOPEE_SUB_USER: ${{ secrets.SHOPEE_SUB_USER }}
+          SHOPEE_SUB_PASSWORD: ${{ secrets.SHOPEE_SUB_PASSWORD }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+          MODE: ${{ github.event.inputs.mode || 'biasa' }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node robot3-shopee.mjs
